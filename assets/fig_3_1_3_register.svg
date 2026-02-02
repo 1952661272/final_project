@@ -1,0 +1,47 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1400' height='820' viewBox='0 0 1400 820'>
+  <defs>
+    <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#f7f9fc'/>
+      <stop offset='100%' stop-color='#eef2f7'/>
+    </linearGradient>
+    <linearGradient id='brand' x1='0' y1='0' x2='1' y2='0'>
+      <stop offset='0%' stop-color='#2f7bff'/>
+      <stop offset='100%' stop-color='#00a3ff'/>
+    </linearGradient>
+  </defs>
+  <rect width='1400' height='820' fill='url(#bg)'/>
+  <rect x='40' y='24' width='1320' height='64' rx='14' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='60' y='38' width='28' height='28' rx='8' fill='url(#brand)'/>
+  <text x='100' y='58' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='20' fill='#1f2d3d'>校园二手交易平台</text>
+  <text x='320' y='48' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#7a869a'>学生注册</text>
+  <circle cx='1290' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <circle cx='1330' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <rect x='80' y='120' width='1240' height='620' rx='16' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='120' y='165' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='18' fill='#1f2d3d'>创建校园账号</text>
+  <text x='120' y='192' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>完成注册后需进行学号认证</text>
+  <text x='120' y='230' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>姓名 *</text>
+  <rect x='120' y='242' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='120' y='310' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>学号 *</text>
+  <rect x='120' y='322' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='120' y='390' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>学院 *</text>
+  <rect x='120' y='402' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='120' y='470' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>手机号 *</text>
+  <rect x='120' y='482' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='580' y='230' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>密码 *</text>
+  <rect x='580' y='242' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='580' y='310' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>确认密码 *</text>
+  <rect x='580' y='322' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='580' y='390' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>所在校区 *</text>
+  <rect x='580' y='402' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='580' y='470' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>验证码 *</text>
+  <rect x='580' y='482' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='580' y='482' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='860' y='482' width='140' height='34' rx='7' fill='#f1f4f9'/>
+  <text x='875' y='505' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#6b7c93'>获取验证码</text>
+  <rect x='120' y='560' width='20' height='20' rx='4' fill='#ffffff' stroke='#cbd5e0'/>
+  <text x='148' y='575' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>我已阅读并同意用户协议</text>
+  <rect x='120' y='600' width='140' height='36' rx='9' fill='#2f7bff'/>
+  <text x='132' y='624' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#ffffff'>提交注册</text>
+  <rect x='280' y='600' width='140' height='36' rx='9' fill='#e9eef6'/>
+  <text x='292' y='624' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#425066'>返回登录</text>
+</svg>

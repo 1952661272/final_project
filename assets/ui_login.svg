@@ -1,0 +1,50 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1400' height='820' viewBox='0 0 1400 820'>
+  <defs>
+    <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#f7f9fc'/>
+      <stop offset='100%' stop-color='#eef2f7'/>
+    </linearGradient>
+    <linearGradient id='brand' x1='0' y1='0' x2='1' y2='0'>
+      <stop offset='0%' stop-color='#2f7bff'/>
+      <stop offset='100%' stop-color='#00a3ff'/>
+    </linearGradient>
+  </defs>
+  <rect width='1400' height='820' fill='url(#bg)'/>
+  <rect x='40' y='24' width='1320' height='64' rx='14' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='60' y='38' width='28' height='28' rx='8' fill='url(#brand)'/>
+  <text x='100' y='58' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='20' fill='#1f2d3d'>校园二手交易平台</text>
+  <text x='320' y='48' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#7a869a'>登录与学号认证</text>
+  <circle cx='1290' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <circle cx='1330' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <rect x='60' y='120' width='520' height='620' rx='16' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='60' y='120' width='520' height='130' rx='16' fill='url(#brand)'/>
+  <text x='90' y='175' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='22' fill='#ffffff'>安全交易，从实名开始</text>
+  <text x='90' y='210' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#e8f1ff'>学号认证 | 校园身份 | 信用评价</text>
+  <rect x='90' y='280' width='460' height='90' rx='12' fill='#f1f4f9'/>
+  <text x='110' y='320' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#4a5568'>实名认证状态</text>
+  <text x='110' y='346' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>当前：待验证</text>
+  <rect x='420' y='308' width='90' height='28' rx='14' fill='#ffe9e9'/>
+  <text x='435' y='327' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#d64545'>未通过</text>
+  <rect x='90' y='390' width='460' height='90' rx='12' fill='#f1f4f9'/>
+  <text x='110' y='430' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#4a5568'>平台优势</text>
+  <text x='110' y='454' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>· 多端适配 · 快速检索 · 真实校园身份</text>
+  <rect x='610' y='140' width='730' height='560' rx='16' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='650' y='185' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='18' fill='#1f2d3d'>学生登录</text>
+  <text x='760' y='185' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#7a869a'>管理员入口</text>
+  <text x='650' y='220' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>学号 *</text>
+  <rect x='650' y='232' width='520' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='650' y='300' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>密码 *</text>
+  <rect x='650' y='312' width='520' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='650' y='380' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>验证码</text>
+  <text x='890' y='390' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='11' fill='#9aa5b1'>点击刷新</text>
+  <rect x='650' y='392' width='360' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='1025' y='392' width='145' height='34' rx='7' fill='#f1f4f9'/>
+  <text x='1040' y='415' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#6b7c93'>A7K9</text>
+  <rect x='650' y='450' width='20' height='20' rx='4' fill='#ffffff' stroke='#cbd5e0'/>
+  <text x='678' y='465' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>我已阅读并同意用户协议</text>
+  <rect x='650' y='500' width='140' height='36' rx='9' fill='#2f7bff'/>
+  <text x='662' y='524' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#ffffff'>登录</text>
+  <rect x='810' y='500' width='160' height='36' rx='9' fill='#e9eef6'/>
+  <text x='822' y='524' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#425066'>注册新账号</text>
+  <text x='650' y='570' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>学号认证通过后才可发布与交易</text>
+</svg>

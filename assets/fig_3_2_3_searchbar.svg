@@ -1,0 +1,50 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1400' height='820' viewBox='0 0 1400 820'>
+  <defs>
+    <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#f7f9fc'/>
+      <stop offset='100%' stop-color='#eef2f7'/>
+    </linearGradient>
+    <linearGradient id='brand' x1='0' y1='0' x2='1' y2='0'>
+      <stop offset='0%' stop-color='#2f7bff'/>
+      <stop offset='100%' stop-color='#00a3ff'/>
+    </linearGradient>
+  </defs>
+  <rect width='1400' height='820' fill='url(#bg)'/>
+  <rect x='40' y='24' width='1320' height='64' rx='14' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='60' y='38' width='28' height='28' rx='8' fill='url(#brand)'/>
+  <text x='100' y='58' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='20' fill='#1f2d3d'>校园二手交易平台</text>
+  <text x='320' y='48' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#7a869a'>搜索栏与快捷筛选</text>
+  <circle cx='1290' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <circle cx='1330' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <rect x='80' y='140' width='1240' height='520' rx='16' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='120' y='190' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='18' fill='#1f2d3d'>搜索商品</text>
+  <text x='120' y='220' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>支持关键字、校区与价格区间组合搜索</text>
+  <text x='120' y='260' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>关键字</text>
+  <rect x='120' y='272' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='130' y='305' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#9aa5b1'>例如：蓝牙耳机</text>
+  <text x='560' y='260' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>校区</text>
+  <rect x='560' y='272' width='240' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='820' y='260' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>成色</text>
+  <rect x='820' y='272' width='240' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='1080' y='260' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>排序</text>
+  <rect x='1080' y='272' width='180' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='120' y='340' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>价格区间</text>
+  <rect x='120' y='352' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='130' y='385' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#9aa5b1'>200 - 800 元</text>
+  <rect x='120' y='420' width='1140' height='180' rx='12' fill='#f1f4f9'/>
+  <text x='150' y='460' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#4a5568'>快捷筛选</text>
+  <rect x='150' y='480' width='108' height='28' rx='14' fill='#f1f4f9'/>
+  <text x='164' y='499' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#556372'>同校区优先</text>
+  <rect x='280' y='480' width='76' height='28' rx='14' fill='#e7f1ff'/>
+  <text x='294' y='499' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#2f7bff'>新发布</text>
+  <rect x='378' y='480' width='76' height='28' rx='14' fill='#f1f4f9'/>
+  <text x='392' y='499' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#556372'>可小刀</text>
+  <rect x='476' y='480' width='92' height='28' rx='14' fill='#f1f4f9'/>
+  <text x='490' y='499' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#556372'>支持面交</text>
+  <rect x='590' y='480' width='60' height='28' rx='14' fill='#f1f4f9'/>
+  <text x='604' y='499' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#556372'>包邮</text>
+  <rect x='120' y='610' width='120' height='36' rx='9' fill='#2f7bff'/>
+  <text x='132' y='634' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#ffffff'>搜索</text>
+  <rect x='250' y='610' width='120' height='36' rx='9' fill='#e9eef6'/>
+  <text x='262' y='634' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#425066'>重置</text>
+</svg>

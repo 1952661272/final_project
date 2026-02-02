@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>校园二手交易平台</title>
+  <link href="https://cdn.jsdelivr.net/npm/quasar@2.16.6/dist/quasar.prod.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="q-app"></div>
+
+  <script src="images.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quasar@2.16.6/dist/quasar.umd.prod.js"></script>
+  <script>
+    const { ref, computed, reactive, watch } = Vue
+    const { Notify } = Quasar
+
+    const app = Vue.createApp({
+      setup() {
+        const isLoggedIn = ref(false)
+        const authTab = ref('student')
+        const role = ref('学生')
+        const currentTab = ref('home')
+        const sellerTab = ref('list')
+        const adminTab = ref('dashboard')
+        const searchTab = ref('list')
+        const orderTab = ref('全部')
+
+        const user = reactive({ name: '', schoolId: '', role: '学生' })
+
+        const loginForm = reactive({ account: '', password: '' })
+        const adminForm = reactive({ account: '', password: '' })
+        const registerForm = reactive({ name: '', schoolId: '', campus: '北校区', password: '', confirm: '' })
+
+        const items = ref([
+          {
+            id: 1,
+            title: '九成新无线键盘',
+            price: 68,
+            campus: '北校区',
+            condition: 9,
+            category: '数码',
+            time: '1小时前',
+            seller: '张同学',
+            desc: '支持蓝牙连接，续航长，键帽无磨损。',
+            tags: ['包邮', '可小刀'],
+            images: [IMG.keyboard, IMG.keyboard2]
+          },
+          {
+            id: 2,
+            title: '二手 iPad 10 64G',
+            price: 1450,
+            campus: '南校区',
+            condition: 8.5,
+            category: '数码',
+            time: '2天前',
+            seller: '李同学',
+            desc: '自用无拆修，电池健康 90%，支持当面验货。',
+            tags: ['面交'],
+            images: [IMG.ipad, IMG.ipad2]
+          },
+          {
+            id: 3,
+            title: '高数教材全套',
+            price: 35,
+            campus: '北校区',
+            condition: 9.5,
+            category: '教材',
+            time: '30分钟前',
+            seller: '王同学',
+            desc: '上册有少量笔记，下册几乎全新。',
+            tags: ['新发布'],
+            images: [IMG.books, IMG.books2]
+          },
+          {
+            id: 4,
+            title: '二手显示器 24寸',
+            price: 360,
+            campus: '东校区',
+            condition: 8,
+            category: '数码',
+            time: '3天前',
+            seller: '刘同学',
+            desc: '无坏点，附 HDMI 线。',
+            tags: ['包邮'],
+            images: [IMG.monitor, IMG.monitor2]
+          },
+          {
+            id: 5,
+            title: '自行车 7成新',
+            price: 220,
+            campus: '北校区',
+            condition: 7,
+            category: '交通工具',
+            time: '4小时前',
+            seller: '赵同学',
+            desc: '适合校内代步，刹车良好。',
+            tags: ['待审核'],
+            images: [IMG.bike, IMG.bike2]
+          },
+          {
+            id: 6,
+            title: '宿舍小风扇',
+            price: 25,
+            campus: '南校区',
+            condition: 9,
+            category: '生活用品',
+            time: '5小时前',
+            seller: '陈同学',
+            desc: '三档风速，静音。',
+            tags: ['新发布'],
+            images: [IMG.fan, IMG.fan2]
+          }
+        ])
+
+        const detailItem = ref(null)
+        const detailIndex = ref(0)
+        const showDetail = ref(false)
+        const detailImages = computed(() => detailItem.value ? detailItem.value.images : [])
+
+        const visibleTabs = computed(() => {
+          const tabs = [
+            { name: 'home', label: '首页推荐' },
+            { name: 'search', label: '搜索筛选' },
+            { name: 'publish', label: '发布商品' },
+            { name: 'orders', label: '订单管理' },
+            { name: 'messages', label: '消息中心' },
+            { name: 'seller', label: '卖家中心' },
+            { name: 'admin', label: '管理后台' }
+          ]
+          if (role.value === '管理员') return tabs.filter(t => ['home', 'search', 'orders', 'messages', 'admin'].includes(t.name))
+          if (role.value === '卖家') return tabs.filter(t => t.name !== 'admin')
+          return tabs.filter(t => !['admin', 'seller'].includes(t.name))
+        })
+
+        watch(role, () => {
+          if (!visibleTabs.value.find(t => t.name === currentTab.value)) currentTab.value = 'home'
+        })
+
+        const breadcrumbText = computed(() => ({
+          home: '首页 / 推荐',
+          search: '首页 / 搜索筛选',
+          publish: '发布 / 新商品',
+          orders: '订单 / 管理',
+          messages: '消息 / 会话',
+          seller: '卖家中心 / 经营',
+          admin: '管理后台 / 运营'
+        })[currentTab.value])
+
+        function loginStudent() {
+          if (!loginForm.account || !loginForm.password) return Notify.create({ type: 'warning', message: '请输入账号与密码' })
+          user.name = loginForm.account
+          user.schoolId = loginForm.account
+          user.role = '学生'
+          role.value = '学生'
+          isLoggedIn.value = true
+        }
+
+        function loginAdmin() {
+          if (!adminForm.account || !adminForm.password) return Notify.create({ type: 'warning', message: '请输入管理员账号与密码' })
+          user.name = adminForm.account
+          user.schoolId = adminForm.account
+          user.role = '管理员'
+          role.value = '管理员'
+          isLoggedIn.value = true
+          currentTab.value = 'admin'
+        }
+
+        function register() {
+          if (!registerForm.name || !registerForm.schoolId || !registerForm.password) return Notify.create({ type: 'warning', message: '请填写完整注册信息' })
+          if (registerForm.password !== registerForm.confirm) return Notify.create({ type: 'warning', message: '两次密码不一致' })
+          user.name = registerForm.name
+          user.schoolId = registerForm.schoolId
+          user.role = '学生'
+          role.value = '学生'
+          isLoggedIn.value = true
+        }
+
+        function logout() {
+          isLoggedIn.value = false
+          user.name = ''
+          user.schoolId = ''
+          user.role = '学生'
+        }
+
+        function openDetail(item) {
+          detailItem.value = item
+          detailIndex.value = 0
+          showDetail.value = true
+        }
+
+        function switchDetail(idx) {
+          detailIndex.value = idx
+        }
+
+        return {
+          isLoggedIn,
+          authTab,
+          role,
+          currentTab,
+          sellerTab,
+          adminTab,
+          searchTab,
+          orderTab,
+          user,
+          loginForm,
+          adminForm,
+          registerForm,
+          items,
+          detailItem,
+          detailIndex,
+          detailImages,
+          showDetail,
+          visibleTabs,
+          breadcrumbText,
+          loginStudent,
+          loginAdmin,
+          register,
+          logout,
+          openDetail,
+          switchDetail
+        }
+      },
+      template: `
+        <q-layout view="hHh Lpr fFf">
+          <q-header elevated class="bg-white text-dark">
+            <q-toolbar>
+              <q-avatar rounded color="primary" text-color="white" icon="store" />
+              <q-toolbar-title>
+                校园二手交易平台
+                <div class="text-caption text-grey">安全、便捷、可信赖的校园二手交易平台</div>
+              </q-toolbar-title>
+              <q-tabs v-if="isLoggedIn" v-model="currentTab" dense class="text-grey-8" active-color="primary" indicator-color="primary">
+                <q-tab v-for="tab in visibleTabs" :key="tab.name" :name="tab.name" :label="tab.label" />
+              </q-tabs>
+              <q-space />
+              <q-select v-if="isLoggedIn" v-model="role" :options="['学生','卖家','管理员']" dense outlined label="当前角色" style="width: 120px" />
+              <q-btn v-if="isLoggedIn" flat icon="logout" label="退出登录" @click="logout" />
+            </q-toolbar>
+          </q-header>
+
+          <q-page-container>
+            <q-page class="page">
+              <div v-if="!isLoggedIn" class="login-wrap">
+                <q-card class="login-card">
+                  <q-card-section>
+                    <div class="text-h6">欢迎使用校园二手交易平台</div>
+                    <div class="text-caption text-grey">请登录或注册后继续</div>
+                  </q-card-section>
+                  <q-tabs v-model="authTab" dense align="justify" active-color="primary" indicator-color="primary">
+                    <q-tab name="student" label="学生登录" />
+                    <q-tab name="admin" label="管理员登录" />
+                    <q-tab name="register" label="学生注册" />
+                  </q-tabs>
+                  <q-separator />
+                  <q-card-section v-if="authTab === 'student'">
+                    <q-input v-model="loginForm.account" label="学号/手机号" dense outlined class="q-mb-md" />
+                    <q-input v-model="loginForm.password" type="password" label="密码" dense outlined class="q-mb-md" />
+                    <q-btn color="primary" label="登录" class="full-width" @click="loginStudent" />
+                  </q-card-section>
+                  <q-card-section v-else-if="authTab === 'admin'">
+                    <q-input v-model="adminForm.account" label="管理员账号" dense outlined class="q-mb-md" />
+                    <q-input v-model="adminForm.password" type="password" label="密码" dense outlined class="q-mb-md" />
+                    <q-btn color="primary" label="登录" class="full-width" @click="loginAdmin" />
+                  </q-card-section>
+                  <q-card-section v-else>
+                    <q-input v-model="registerForm.name" label="姓名" dense outlined class="q-mb-md" />
+                    <q-input v-model="registerForm.schoolId" label="学号" dense outlined class="q-mb-md" />
+                    <q-select v-model="registerForm.campus" :options="['北校区','南校区','东校区']" label="校区" dense outlined class="q-mb-md" />
+                    <q-input v-model="registerForm.password" type="password" label="密码" dense outlined class="q-mb-md" />
+                    <q-input v-model="registerForm.confirm" type="password" label="确认密码" dense outlined class="q-mb-md" />
+                    <q-btn color="primary" label="注册并登录" class="full-width" @click="register" />
+                  </q-card-section>
+                </q-card>
+              </div>
+
+              <div v-else class="layout">
+                <aside class="left">
+                  <div class="card">
+                    <div class="card-title">账号信息</div>
+                    <div class="muted">学号：{{ user.schoolId }}</div>
+                    <div class="muted">姓名：{{ user.name }}</div>
+                    <div class="muted">角色：{{ role }}</div>
+                    <button class="btn primary full" @click="logout">退出登录</button>
+                    <button class="btn ghost full">查看信用</button>
+                  </div>
+                  <div class="card">
+                    <div class="card-title">功能指引</div>
+                    <ol>
+                      <li>选择功能页签</li>
+                      <li>填写/选择筛选条件</li>
+                      <li>查看结果并互动</li>
+                    </ol>
+                  </div>
+                </aside>
+
+                <main class="center">
+                  <div class="breadcrumbs">{{ breadcrumbText }}</div>
+                  <div v-if="currentTab === 'home'">
+                    <div class="hero">
+                      <div>
+                        <div class="hero-title">校园热卖榜</div>
+                        <div class="hero-sub">发现同校优质好物，真实图片展示</div>
+                      </div>
+                      <button class="btn primary">去搜索</button>
+                    </div>
+                    <div class="grid">
+                      <div class="item-card" v-for="item in items" :key="item.id">
+                        <div class="img-wrap">
+                          <img :src="item.images[0]" :alt="item.title" />
+                          <div class="price-badge">¥ {{ item.price }}</div>
+                        </div>
+                        <div class="item-body">
+                          <div class="item-title">{{ item.title }}</div>
+                          <div class="item-meta">{{ item.campus }} · {{ item.time }} · 成色 {{ item.condition }}</div>
+                          <div class="item-actions">
+                            <button class="btn link" @click="openDetail(item)">查看详情</button>
+                            <button class="btn link">收藏</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </main>
+
+                <aside class="right">
+                  <div class="card">
+                    <div class="card-title">安全与提醒</div>
+                    <ul>
+                      <li>实名账号可发布与交易</li>
+                      <li>收藏商品可快速追踪动态</li>
+                      <li>交易优先选择校内安全地点</li>
+                    </ul>
+                  </div>
+                </aside>
+              </div>
+            </q-page>
+          </q-page-container>
+
+          <q-dialog v-model="showDetail" persistent>
+            <q-card style="width: 900px; max-width: 92vw;">
+              <q-card-section>
+                <div class="text-h6">{{ detailItem?.title }}</div>
+                <div class="text-caption text-grey">{{ detailItem?.campus }} · 成色 {{ detailItem?.condition }}</div>
+              </q-card-section>
+              <q-card-section>
+                <div class="detail">
+                  <div class="detail-media">
+                    <img :src="detailImages[detailIndex]" :alt="detailItem?.title" />
+                    <div class="detail-thumbs">
+                      <img v-for="(img, idx) in detailImages" :key="idx" :src="img" :class="['thumb', idx === detailIndex ? 'active' : '']" @click="switchDetail(idx)" />
+                    </div>
+                  </div>
+                  <div class="detail-info">
+                    <h2>{{ detailItem?.title }}</h2>
+                    <div class="muted">{{ detailItem?.desc }}</div>
+                    <div class="muted">卖家：{{ detailItem?.seller }} · {{ detailItem?.campus }}</div>
+                    <div class="muted">标签：{{ detailItem?.tags?.join('、') }}</div>
+                    <div class="price">¥ {{ detailItem?.price }}</div>
+                    <div class="detail-actions">
+                      <button class="btn ghost">收藏</button>
+                      <button class="btn primary">私聊</button>
+                      <button class="btn ghost" @click="showDetail=false">关闭</button>
+                    </div>
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </q-dialog>
+        </q-layout>
+      `
+    })
+
+    app.use(Quasar)
+    app.mount('#q-app')
+  </script>
+</body>
+</html>

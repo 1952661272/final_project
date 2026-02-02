@@ -1,0 +1,42 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1400' height='820' viewBox='0 0 1400 820'>
+  <defs>
+    <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#f7f9fc'/>
+      <stop offset='100%' stop-color='#eef2f7'/>
+    </linearGradient>
+    <linearGradient id='brand' x1='0' y1='0' x2='1' y2='0'>
+      <stop offset='0%' stop-color='#2f7bff'/>
+      <stop offset='100%' stop-color='#00a3ff'/>
+    </linearGradient>
+  </defs>
+  <rect width='1400' height='820' fill='url(#bg)'/>
+  <rect x='40' y='24' width='1320' height='64' rx='14' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='60' y='38' width='28' height='28' rx='8' fill='url(#brand)'/>
+  <text x='100' y='58' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='20' fill='#1f2d3d'>校园二手交易平台</text>
+  <text x='320' y='48' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#7a869a'>管理员登录</text>
+  <circle cx='1290' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <circle cx='1330' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <rect x='100' y='140' width='1200' height='560' rx='16' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='100' y='140' width='1200' height='110' rx='16' fill='url(#brand)'/>
+  <text x='140' y='200' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='20' fill='#ffffff'>管理后台 · 安全登录</text>
+  <text x='140' y='228' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#e8f1ff'>仅限运营人员使用</text>
+  <text x='180' y='300' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='16' fill='#1f2d3d'>管理员账户登录</text>
+  <text x='180' y='330' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>管理员账号</text>
+  <rect x='180' y='342' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='190' y='375' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#9aa5b1'>admin@school</text>
+  <text x='180' y='410' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>密码</text>
+  <rect x='180' y='422' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='190' y='455' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#9aa5b1'>••••••••</text>
+  <text x='180' y='490' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>邀请码</text>
+  <rect x='180' y='502' width='420' height='34' rx='7' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='190' y='535' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#9aa5b1'>学院发放的邀请码</text>
+  <rect x='180' y='560' width='140' height='36' rx='9' fill='#2f7bff'/>
+  <text x='192' y='584' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#ffffff'>登录</text>
+  <rect x='340' y='560' width='160' height='36' rx='9' fill='#e9eef6'/>
+  <text x='352' y='584' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#425066'>忘记密码</text>
+  <rect x='680' y='300' width='560' height='280' rx='12' fill='#f1f4f9'/>
+  <text x='710' y='340' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#4a5568'>登录提醒</text>
+  <text x='710' y='370' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>1. 账号仅限工作人员使用</text>
+  <text x='710' y='395' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>2. 发现异常请及时修改密码</text>
+  <text x='710' y='420' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>3. 登录行为将纳入审计日志</text>
+</svg>

@@ -1,0 +1,42 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1400' height='820' viewBox='0 0 1400 820'>
+  <defs>
+    <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#f7f9fc'/>
+      <stop offset='100%' stop-color='#eef2f7'/>
+    </linearGradient>
+    <linearGradient id='brand' x1='0' y1='0' x2='1' y2='0'>
+      <stop offset='0%' stop-color='#2f7bff'/>
+      <stop offset='100%' stop-color='#00a3ff'/>
+    </linearGradient>
+  </defs>
+  <rect width='1400' height='820' fill='url(#bg)'/>
+  <rect x='40' y='24' width='1320' height='64' rx='14' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='60' y='38' width='28' height='28' rx='8' fill='url(#brand)'/>
+  <text x='100' y='58' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='20' fill='#1f2d3d'>校园二手交易平台</text>
+  <text x='320' y='48' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#7a869a'>商品详情</text>
+  <circle cx='1290' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <circle cx='1330' cy='56' r='16' fill='#f1f4f9' stroke='#d7dbe6'/>
+  <rect x='40' y='110' width='840' height='640' rx='14' fill='#ffffff' stroke='#d7dbe6'/>
+  <rect x='70' y='140' width='780' height='360' rx='12' fill='#f1f4f9'/>
+  <rect x='70' y='520' width='120' height='90' rx='10' fill='#e5ecf6'/>
+  <rect x='200' y='520' width='120' height='90' rx='10' fill='#e5ecf6'/>
+  <rect x='330' y='520' width='120' height='90' rx='10' fill='#e5ecf6'/>
+  <text x='70' y='640' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='14' fill='#2d3748'>九成新单反相机套装</text>
+  <text x='70' y='670' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>成色9.0 | 南校区 | 发布于1天前</text>
+  <rect x='910' y='110' width='450' height='640' rx='14' fill='#ffffff' stroke='#d7dbe6'/>
+  <text x='940' y='150' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='18' fill='#1f2d3d'>¥ 1680</text>
+  <text x='940' y='180' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>可小刀 · 支持当面验货</text>
+  <rect x='940' y='210' width='140' height='36' rx='9' fill='#2f7bff'/>
+  <text x='952' y='234' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#ffffff'>立即私聊</text>
+  <rect x='1090' y='210' width='120' height='36' rx='9' fill='#e9eef6'/>
+  <text x='1102' y='234' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#425066'>收藏</text>
+  <rect x='940' y='270' width='380' height='120' rx='10' fill='#f1f4f9'/>
+  <text x='960' y='305' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#4a5568'>卖家信息</text>
+  <text x='960' y='330' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>张同学 · 学号认证</text>
+  <text x='960' y='355' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>信用评分：4.8 / 5</text>
+  <rect x='940' y='410' width='380' height='140' rx='10' fill='#fff7e6'/>
+  <text x='960' y='440' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='13' fill='#8a6d3b'>安全提示</text>
+  <text x='960' y='465' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#8a6d3b'>建议校内面交，验货后再付款</text>
+  <text x='960' y='485' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#8a6d3b'>勿私下转账给陌生账号</text>
+  <text x='940' y='585' font-family='PingFang SC','Microsoft YaHei','Noto Sans CJK SC','SimHei',sans-serif font-size='12' fill='#7a869a'>商品描述：含镜头、充电器、原包装</text>
+</svg>
