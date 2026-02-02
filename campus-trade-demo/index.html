@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/quasar@2.16.6/dist/quasar.umd.prod.js"></script>
   <script>
-    const { ref, computed, reactive, watch } = Vue
+    const { ref, computed, reactive, watch, onMounted, nextTick } = Vue
     const { Notify } = Quasar
 
     const app = Vue.createApp({
@@ -26,14 +26,22 @@
         const currentTab = ref('home')
         const sellerTab = ref('list')
         const adminTab = ref('dashboard')
-        const searchTab = ref('list')
         const orderTab = ref('全部')
+        const selectedChat = ref(0)
+        const chatInput = ref('')
+        const showSellerEdit = ref(false)
 
         const user = reactive({ name: '', schoolId: '', role: '学生' })
 
         const loginForm = reactive({ account: '', password: '' })
         const adminForm = reactive({ account: '', password: '' })
         const registerForm = reactive({ name: '', schoolId: '', campus: '北校区', password: '', confirm: '' })
+
+        const categories = ['全部', '数码', '教材', '生活用品', '交通工具', '租房']
+        const campuses = ['北校区', '南校区', '东校区']
+        const priceOptions = ['全部', '0-100', '100-500', '500-2000', '2000+']
+        const conditionOptions = ['全部', '9-10', '8-9', '7-8', '7以下']
+        const sortOptions = ['最新', '价格升序', '价格降序']
 
         const items = ref([
           {
@@ -47,6 +55,8 @@
             seller: '张同学',
             desc: '支持蓝牙连接，续航长，键帽无磨损。',
             tags: ['包邮', '可小刀'],
+            status: '上架',
+            views: 156,
             images: [IMG.keyboard, IMG.keyboard2]
           },
           {
@@ -60,6 +70,8 @@
             seller: '李同学',
             desc: '自用无拆修，电池健康 90%，支持当面验货。',
             tags: ['面交'],
+            status: '上架',
+            views: 132,
             images: [IMG.ipad, IMG.ipad2]
           },
           {
@@ -73,6 +85,8 @@
             seller: '王同学',
             desc: '上册有少量笔记，下册几乎全新。',
             tags: ['新发布'],
+            status: '上架',
+            views: 88,
             images: [IMG.books, IMG.books2]
           },
           {
@@ -86,6 +100,8 @@
             seller: '刘同学',
             desc: '无坏点，附 HDMI 线。',
             tags: ['包邮'],
+            status: '上架',
+            views: 95,
             images: [IMG.monitor, IMG.monitor2]
           },
           {
@@ -99,6 +115,8 @@
             seller: '赵同学',
             desc: '适合校内代步，刹车良好。',
             tags: ['待审核'],
+            status: '待审核',
+            views: 42,
             images: [IMG.bike, IMG.bike2]
           },
           {
@@ -112,14 +130,111 @@
             seller: '陈同学',
             desc: '三档风速，静音。',
             tags: ['新发布'],
+            status: '上架',
+            views: 73,
             images: [IMG.fan, IMG.fan2]
           }
         ])
+
+        const favorites = ref([2])
 
         const detailItem = ref(null)
         const detailIndex = ref(0)
         const showDetail = ref(false)
         const detailImages = computed(() => detailItem.value ? detailItem.value.images : [])
+
+        const searchDefaults = {
+          keyword: '',
+          category: '全部',
+          campus: '全部',
+          price: '全部',
+          condition: '全部',
+          sort: '最新'
+        }
+        const searchForm = reactive({ ...searchDefaults })
+        const searchDraft = reactive({ ...searchDefaults })
+
+        const imageOptions = [
+          { id: 'keyboard', label: '无线键盘', images: [IMG.keyboard, IMG.keyboard2] },
+          { id: 'ipad', label: 'iPad', images: [IMG.ipad, IMG.ipad2] },
+          { id: 'books', label: '教材套装', images: [IMG.books, IMG.books2] },
+          { id: 'monitor', label: '显示器', images: [IMG.monitor, IMG.monitor2] },
+          { id: 'bike', label: '折叠自行车', images: [IMG.bike, IMG.bike2] },
+          { id: 'fan', label: '宿舍风扇', images: [IMG.fan, IMG.fan2] }
+        ]
+        const selectedImageSet = ref(imageOptions[0].id)
+
+        const publishForm = reactive({
+          title: '',
+          price: '',
+          category: '数码',
+          campus: '北校区',
+          condition: '9',
+          desc: '',
+          tags: '包邮,可小刀',
+          images: [...imageOptions[0].images]
+        })
+
+        const orders = ref([
+          { id: 'B2026018', itemId: 2, item: '二手 iPad 10 64G', price: 1450, status: '待确认', time: '2026-01-30', seller: '李同学' },
+          { id: 'B2026021', itemId: 1, item: '九成新无线键盘', price: 68, status: '进行中', time: '2026-01-28', seller: '张同学' },
+          { id: 'B2026024', itemId: 3, item: '高数教材全套', price: 35, status: '已完成', time: '2026-01-20', seller: '王同学' }
+        ])
+        const orderTabs = ['全部', '待确认', '进行中', '已完成', '已取消']
+
+        const sellerOrders = ref([
+          { id: 'S2026008', buyer: '李同学', item: '二手耳机', price: 220, status: '待确认', time: '2026-01-29' },
+          { id: 'S2026011', buyer: '王同学', item: '折叠桌', price: 90, status: '待确认', time: '2026-01-27' },
+          { id: 'S2026015', buyer: '陈同学', item: '宿舍小风扇', price: 35, status: '已确认', time: '2026-01-25' }
+        ])
+
+        const chats = ref([
+          { name: '张同学', messages: [
+            { from: 'other', text: '你好，可以当面验货吗？', time: '10:12' },
+            { from: 'me', text: '可以的，图书馆门口见。', time: '10:13' }
+          ] },
+          { name: '李同学', messages: [
+            { from: 'other', text: '还能再便宜一点吗？', time: '昨天' },
+            { from: 'me', text: '可以小刀，给你 1400。', time: '昨天' }
+          ] },
+          { name: '王同学', messages: [
+            { from: 'other', text: '教材还在吗？', time: '09:20' }
+          ] }
+        ])
+
+        const adminListings = ref([
+          { id: 'A01', title: '二手显卡 RTX 3060', user: '王同学', time: '10分钟前', status: '待审核', campus: '北校区' },
+          { id: 'A02', title: '毕业闲置桌椅', user: '李同学', time: '1小时前', status: '待审核', campus: '南校区' },
+          { id: 'A03', title: '宿舍电热水壶', user: '赵同学', time: '昨天', status: '驳回', campus: '东校区' }
+        ])
+
+        const adminOrders = ref([
+          { id: 'T2026019', item: '二手 iPad 10 64G', buyer: '李同学', seller: '王同学', amount: 1450, status: '进行中', time: '2026-01-30' },
+          { id: 'T2026022', item: '无线键盘', buyer: '陈同学', seller: '张同学', amount: 68, status: '待确认', time: '2026-01-28' },
+          { id: 'T2026025', item: '折叠自行车', buyer: '周同学', seller: '赵同学', amount: 220, status: '已完成', time: '2026-01-22' }
+        ])
+
+        const adminUsers = ref([
+          { id: 'U01', name: '张同学', status: '正常', reg: '2024-09-01', credit: 4.8, campus: '北校区' },
+          { id: 'U02', name: '李同学', status: '正常', reg: '2024-10-12', credit: 4.6, campus: '南校区' },
+          { id: 'U03', name: '王同学', status: '禁用', reg: '2024-11-20', credit: 4.2, campus: '东校区' }
+        ])
+
+        const adminSettlements = ref([
+          { id: 'F202601', user: '张同学', amount: 820, status: '待结算', time: '2026-01-29' },
+          { id: 'F202602', user: '李同学', amount: 380, status: '已结算', time: '2026-01-24' },
+          { id: 'F202603', user: '赵同学', amount: 220, status: '待结算', time: '2026-01-20' }
+        ])
+
+        const sellerEditForm = reactive({
+          id: null,
+          title: '',
+          price: '',
+          condition: '',
+          campus: '',
+          desc: '',
+          status: '上架'
+        })
 
         const visibleTabs = computed(() => {
           const tabs = [
@@ -132,23 +247,81 @@
             { name: 'admin', label: '管理后台' }
           ]
           if (role.value === '管理员') return tabs.filter(t => ['home', 'search', 'orders', 'messages', 'admin'].includes(t.name))
-          if (role.value === '卖家') return tabs.filter(t => t.name !== 'admin')
-          return tabs.filter(t => !['admin', 'seller'].includes(t.name))
+          return tabs.filter(t => t.name !== 'admin')
         })
 
         watch(role, () => {
           if (!visibleTabs.value.find(t => t.name === currentTab.value)) currentTab.value = 'home'
         })
 
-        const breadcrumbText = computed(() => ({
-          home: '首页 / 推荐',
-          search: '首页 / 搜索筛选',
-          publish: '发布 / 新商品',
-          orders: '订单 / 管理',
-          messages: '消息 / 会话',
-          seller: '卖家中心 / 经营',
-          admin: '管理后台 / 运营'
-        })[currentTab.value])
+        const breadcrumbText = computed(() => {
+          if (currentTab.value === 'seller') {
+            const map = {
+              list: '卖家中心 / 我的发布',
+              orders: '卖家中心 / 订单处理',
+              finance: '卖家中心 / 财务统计'
+            }
+            return map[sellerTab.value]
+          }
+          if (currentTab.value === 'admin') {
+            const map = {
+              dashboard: '管理后台 / 数据看板',
+              listings: '管理后台 / 商品审核',
+              orders: '管理后台 / 订单管理',
+              finance: '管理后台 / 资金结算',
+              users: '管理后台 / 用户管理'
+            }
+            return map[adminTab.value]
+          }
+          return ({
+            home: '首页 / 推荐',
+            search: '首页 / 搜索筛选',
+            publish: '发布 / 新商品',
+            orders: '订单 / 管理',
+            messages: '消息 / 会话'
+          })[currentTab.value]
+        })
+
+        const filteredItems = computed(() => {
+          let result = [...items.value]
+          const { keyword, category, campus, price, condition, sort } = searchForm
+          if (keyword) result = result.filter(i => i.title.includes(keyword) || i.desc.includes(keyword))
+          if (category !== '全部') result = result.filter(i => i.category === category)
+          if (campus !== '全部') result = result.filter(i => i.campus === campus)
+          if (price !== '全部') {
+            result = result.filter(i => {
+              if (price === '0-100') return i.price <= 100
+              if (price === '100-500') return i.price > 100 && i.price <= 500
+              if (price === '500-2000') return i.price > 500 && i.price <= 2000
+              if (price === '2000+') return i.price > 2000
+              return true
+            })
+          }
+          if (condition !== '全部') {
+            result = result.filter(i => {
+              if (condition === '9-10') return i.condition >= 9
+              if (condition === '8-9') return i.condition >= 8 && i.condition < 9
+              if (condition === '7-8') return i.condition >= 7 && i.condition < 8
+              if (condition === '7以下') return i.condition < 7
+              return true
+            })
+          }
+          if (sort === '价格升序') result.sort((a, b) => a.price - b.price)
+          if (sort === '价格降序') result.sort((a, b) => b.price - a.price)
+          return result
+        })
+
+        const filteredOrders = computed(() => {
+          if (orderTab.value === '全部') return orders.value
+          return orders.value.filter(o => o.status === orderTab.value)
+        })
+
+        const sellerItems = computed(() => {
+          const own = items.value.filter(i => i.seller === user.name)
+          return own.length ? own : items.value.slice(0, 4)
+        })
+
+        const activeChat = computed(() => chats.value[selectedChat.value])
 
         function loginStudent() {
           if (!loginForm.account || !loginForm.password) return Notify.create({ type: 'warning', message: '请输入账号与密码' })
@@ -184,6 +357,8 @@
           user.name = ''
           user.schoolId = ''
           user.role = '学生'
+          role.value = '学生'
+          currentTab.value = 'home'
         }
 
         function openDetail(item) {
@@ -196,6 +371,256 @@
           detailIndex.value = idx
         }
 
+        function toggleFav(item) {
+          const idx = favorites.value.indexOf(item.id)
+          if (idx >= 0) favorites.value.splice(idx, 1)
+          else favorites.value.push(item.id)
+        }
+
+        function isFav(id) {
+          return favorites.value.includes(id)
+        }
+
+        function applySearch() {
+          Object.assign(searchForm, searchDraft)
+        }
+
+        function resetSearch() {
+          Object.assign(searchDraft, searchDefaults)
+          Object.assign(searchForm, searchDefaults)
+        }
+
+        function selectImageSet(id) {
+          const selected = imageOptions.find(opt => opt.id === id)
+          if (!selected) return
+          selectedImageSet.value = id
+          publishForm.images = [...selected.images]
+        }
+
+        function publishItem() {
+          if (!publishForm.title || !publishForm.price || !publishForm.condition) {
+            return Notify.create({ type: 'warning', message: '请填写完整商品信息' })
+          }
+          const tags = publishForm.tags ? publishForm.tags.split(/[,，]/).map(t => t.trim()).filter(Boolean) : ['新发布']
+          const newItem = {
+            id: Date.now(),
+            title: publishForm.title,
+            price: Number(publishForm.price) || 0,
+            campus: publishForm.campus,
+            condition: Number(publishForm.condition) || 9,
+            category: publishForm.category,
+            time: '刚刚',
+            seller: user.name || '体验用户',
+            desc: publishForm.desc || '暂无描述',
+            tags: tags.length ? tags : ['新发布'],
+            status: '待审核',
+            views: 0,
+            images: publishForm.images.length ? [...publishForm.images] : [...imageOptions[0].images]
+          }
+          items.value.unshift(newItem)
+          adminListings.value.unshift({
+            id: `A${Math.floor(Math.random() * 100)}`,
+            title: newItem.title,
+            user: newItem.seller,
+            time: '刚刚',
+            status: '待审核',
+            campus: newItem.campus
+          })
+          Notify.create({ type: 'positive', message: '发布成功（演示）：已进入审核队列' })
+          publishForm.title = ''
+          publishForm.price = ''
+          publishForm.condition = '9'
+          publishForm.desc = ''
+        }
+
+        function saveDraft() {
+          Notify.create({ type: 'positive', message: '草稿已保存（演示）' })
+        }
+
+        function setOrderTab(tab) {
+          orderTab.value = tab
+        }
+
+        function confirmOrder(order) {
+          order.status = '已完成'
+        }
+
+        function cancelOrder(order) {
+          order.status = '已取消'
+        }
+
+        function payOrder(order) {
+          order.status = '进行中'
+        }
+
+        function selectChat(idx) {
+          selectedChat.value = idx
+        }
+
+        function sendMessage() {
+          if (!chatInput.value.trim() || !activeChat.value) return
+          activeChat.value.messages.push({ from: 'me', text: chatInput.value.trim(), time: '刚刚' })
+          chatInput.value = ''
+          setTimeout(() => {
+            activeChat.value.messages.push({ from: 'other', text: '收到啦，我马上确认。', time: '刚刚' })
+          }, 500)
+        }
+
+        function startChat(item) {
+          const index = chats.value.findIndex(c => c.name === item.seller)
+          if (index === -1) {
+            chats.value.unshift({
+              name: item.seller,
+              messages: [{ from: 'other', text: '你好，物品还在的。', time: '刚刚' }]
+            })
+            selectedChat.value = 0
+          } else {
+            selectedChat.value = index
+          }
+          currentTab.value = 'messages'
+        }
+
+        function openSellerEdit(item) {
+          sellerEditForm.id = item.id
+          sellerEditForm.title = item.title
+          sellerEditForm.price = item.price
+          sellerEditForm.condition = item.condition
+          sellerEditForm.campus = item.campus
+          sellerEditForm.desc = item.desc
+          sellerEditForm.status = item.status
+          showSellerEdit.value = true
+        }
+
+        function saveSellerEdit() {
+          const item = items.value.find(i => i.id === sellerEditForm.id)
+          if (!item) return
+          item.title = sellerEditForm.title
+          item.price = Number(sellerEditForm.price) || item.price
+          item.condition = Number(sellerEditForm.condition) || item.condition
+          item.campus = sellerEditForm.campus
+          item.desc = sellerEditForm.desc
+          item.status = sellerEditForm.status
+          showSellerEdit.value = false
+          Notify.create({ type: 'positive', message: '商品信息已更新' })
+        }
+
+        function toggleItemStatus(item) {
+          item.status = item.status === '上架' ? '下架' : '上架'
+        }
+
+        function sellerApprove(order) {
+          order.status = '已确认'
+        }
+
+        function sellerReject(order) {
+          order.status = '已拒绝'
+        }
+
+        function adminApprove(listing) {
+          listing.status = '通过'
+        }
+
+        function adminReject(listing) {
+          listing.status = '驳回'
+        }
+
+        function adminMarkOrder(order) {
+          order.status = '处理中'
+        }
+
+        function toggleUser(userRow) {
+          userRow.status = userRow.status === '正常' ? '禁用' : '正常'
+        }
+
+        function badgeClass(status) {
+          if (['已完成', '通过', '已结算', '正常'].includes(status)) return 'success'
+          if (['待确认', '待审核', '待结算'].includes(status)) return 'warn'
+          if (['驳回', '已取消', '已拒绝', '禁用'].includes(status)) return 'danger'
+          if (['进行中', '处理中', '已确认'].includes(status)) return 'info'
+          return 'neutral'
+        }
+
+        function quickLogin(asRole) {
+          isLoggedIn.value = true
+          role.value = asRole
+          user.role = asRole
+          user.name = asRole === '管理员' ? '系统管理员' : '体验用户'
+          user.schoolId = asRole === '管理员' ? 'ADMIN01' : '20230001'
+        }
+
+        function applyScreenPreset(screen) {
+          if (!screen) return
+          if (screen.startsWith('fig_3_1_')) {
+            isLoggedIn.value = false
+            if (screen === 'fig_3_1_2_admin_login') authTab.value = 'admin'
+            else if (screen === 'fig_3_1_3_register') authTab.value = 'register'
+            else authTab.value = 'student'
+            return
+          }
+
+          if (screen.startsWith('fig_3_6_')) quickLogin('管理员')
+          else quickLogin('学生')
+
+          switch (screen) {
+            case 'fig_3_2_1_home':
+              currentTab.value = 'home'
+              break
+            case 'fig_3_2_3_searchbar':
+              currentTab.value = 'search'
+              break
+            case 'fig_3_3_detail':
+              currentTab.value = 'home'
+              nextTick(() => openDetail(items.value[0]))
+              break
+            case 'fig_3_4_orders':
+              currentTab.value = 'orders'
+              break
+            case 'fig_3_5_1_mylist':
+              currentTab.value = 'seller'
+              sellerTab.value = 'list'
+              break
+            case 'fig_3_5_2_edit':
+              currentTab.value = 'seller'
+              sellerTab.value = 'list'
+              nextTick(() => openSellerEdit(items.value[0]))
+              break
+            case 'fig_3_5_3_publish':
+              currentTab.value = 'publish'
+              break
+            case 'fig_3_5_4_seller_orders':
+              currentTab.value = 'seller'
+              sellerTab.value = 'orders'
+              break
+            case 'fig_3_5_5_finance':
+              currentTab.value = 'seller'
+              sellerTab.value = 'finance'
+              break
+            case 'fig_3_6_1_dashboard':
+              currentTab.value = 'admin'
+              adminTab.value = 'dashboard'
+              break
+            case 'fig_3_6_2_listing_review':
+              currentTab.value = 'admin'
+              adminTab.value = 'listings'
+              break
+            case 'fig_3_6_3_order_mgmt':
+              currentTab.value = 'admin'
+              adminTab.value = 'orders'
+              break
+            case 'fig_3_6_4_user_finance':
+              currentTab.value = 'admin'
+              adminTab.value = 'finance'
+              break
+            default:
+              currentTab.value = 'home'
+          }
+        }
+
+        onMounted(() => {
+          const screen = new URLSearchParams(window.location.search).get('screen')
+          applyScreenPreset(screen)
+        })
+
         return {
           isLoggedIn,
           authTab,
@@ -203,25 +628,74 @@
           currentTab,
           sellerTab,
           adminTab,
-          searchTab,
           orderTab,
+          orderTabs,
+          selectedChat,
+          chatInput,
           user,
           loginForm,
           adminForm,
           registerForm,
+          categories,
+          campuses,
+          priceOptions,
+          conditionOptions,
+          sortOptions,
           items,
+          favorites,
           detailItem,
           detailIndex,
           detailImages,
           showDetail,
+          searchDraft,
+          filteredItems,
+          imageOptions,
+          selectedImageSet,
+          publishForm,
+          orders,
+          filteredOrders,
+          sellerOrders,
+          chats,
+          activeChat,
+          adminListings,
+          adminOrders,
+          adminUsers,
+          adminSettlements,
+          sellerItems,
           visibleTabs,
           breadcrumbText,
+          showSellerEdit,
+          sellerEditForm,
           loginStudent,
           loginAdmin,
           register,
           logout,
           openDetail,
-          switchDetail
+          switchDetail,
+          toggleFav,
+          isFav,
+          applySearch,
+          resetSearch,
+          selectImageSet,
+          publishItem,
+          saveDraft,
+          setOrderTab,
+          confirmOrder,
+          cancelOrder,
+          payOrder,
+          selectChat,
+          sendMessage,
+          startChat,
+          openSellerEdit,
+          saveSellerEdit,
+          toggleItemStatus,
+          sellerApprove,
+          sellerReject,
+          adminApprove,
+          adminReject,
+          adminMarkOrder,
+          toggleUser,
+          badgeClass
         }
       },
       template: `
@@ -237,7 +711,7 @@
                 <q-tab v-for="tab in visibleTabs" :key="tab.name" :name="tab.name" :label="tab.label" />
               </q-tabs>
               <q-space />
-              <q-select v-if="isLoggedIn" v-model="role" :options="['学生','卖家','管理员']" dense outlined label="当前角色" style="width: 120px" />
+              <span v-if="isLoggedIn" class="badge">当前角色：{{ role }}</span>
               <q-btn v-if="isLoggedIn" flat icon="logout" label="退出登录" @click="logout" />
             </q-toolbar>
           </q-header>
@@ -269,7 +743,7 @@
                   <q-card-section v-else>
                     <q-input v-model="registerForm.name" label="姓名" dense outlined class="q-mb-md" />
                     <q-input v-model="registerForm.schoolId" label="学号" dense outlined class="q-mb-md" />
-                    <q-select v-model="registerForm.campus" :options="['北校区','南校区','东校区']" label="校区" dense outlined class="q-mb-md" />
+                    <q-select v-model="registerForm.campus" :options="campuses" label="校区" dense outlined class="q-mb-md" />
                     <q-input v-model="registerForm.password" type="password" label="密码" dense outlined class="q-mb-md" />
                     <q-input v-model="registerForm.confirm" type="password" label="确认密码" dense outlined class="q-mb-md" />
                     <q-btn color="primary" label="注册并登录" class="full-width" @click="register" />
@@ -295,17 +769,26 @@
                       <li>查看结果并互动</li>
                     </ol>
                   </div>
+                  <div class="card">
+                    <div class="card-title">快捷入口</div>
+                    <div class="list compact">
+                      <button class="btn ghost full" @click="currentTab='publish'">发布新商品</button>
+                      <button class="btn ghost full" @click="currentTab='orders'">查看订单</button>
+                      <button class="btn ghost full" @click="currentTab='messages'">消息中心</button>
+                    </div>
+                  </div>
                 </aside>
 
                 <main class="center">
                   <div class="breadcrumbs">{{ breadcrumbText }}</div>
+
                   <div v-if="currentTab === 'home'">
                     <div class="hero">
                       <div>
                         <div class="hero-title">校园热卖榜</div>
                         <div class="hero-sub">发现同校优质好物，真实图片展示</div>
                       </div>
-                      <button class="btn primary">去搜索</button>
+                      <button class="btn primary" @click="currentTab='search'">去搜索</button>
                     </div>
                     <div class="grid">
                       <div class="item-card" v-for="item in items" :key="item.id">
@@ -318,9 +801,335 @@
                           <div class="item-meta">{{ item.campus }} · {{ item.time }} · 成色 {{ item.condition }}</div>
                           <div class="item-actions">
                             <button class="btn link" @click="openDetail(item)">查看详情</button>
-                            <button class="btn link">收藏</button>
+                            <button class="btn link" @click="toggleFav(item)">{{ isFav(item.id) ? '已收藏' : '收藏' }}</button>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else-if="currentTab === 'search'">
+                    <div class="card">
+                      <div class="grid cols-2">
+                        <div>
+                          <div class="field">
+                            <label>关键字</label>
+                            <input v-model="searchDraft.keyword" placeholder="例如：耳机" />
+                          </div>
+                          <div class="field">
+                            <label>分类</label>
+                            <select v-model="searchDraft.category">
+                              <option v-for="cat in categories" :key="cat">{{ cat }}</option>
+                            </select>
+                          </div>
+                          <div class="field">
+                            <label>校区</label>
+                            <select v-model="searchDraft.campus">
+                              <option>全部</option>
+                              <option v-for="campus in campuses" :key="campus">{{ campus }}</option>
+                            </select>
+                          </div>
+                          <div class="field">
+                            <label>价格区间</label>
+                            <select v-model="searchDraft.price">
+                              <option v-for="p in priceOptions" :key="p">{{ p }}</option>
+                            </select>
+                          </div>
+                          <div class="field">
+                            <label>成色</label>
+                            <select v-model="searchDraft.condition">
+                              <option v-for="c in conditionOptions" :key="c">{{ c }}</option>
+                            </select>
+                          </div>
+                          <div class="field">
+                            <label>排序</label>
+                            <select v-model="searchDraft.sort">
+                              <option v-for="s in sortOptions" :key="s">{{ s }}</option>
+                            </select>
+                          </div>
+                          <div class="field actions">
+                            <button class="btn primary" @click="applySearch">应用筛选</button>
+                            <button class="btn ghost" @click="resetSearch">重置</button>
+                          </div>
+                        </div>
+                        <div>
+                          <div v-if="filteredItems.length === 0" class="empty">暂无符合条件的商品</div>
+                          <div v-else class="list">
+                            <div class="card item-row" v-for="item in filteredItems" :key="item.id">
+                              <img class="item-thumb" :src="item.images[0]" :alt="item.title" />
+                              <div class="meta">
+                                <div class="item-title">{{ item.title }}</div>
+                                <div class="muted">{{ item.campus }} · {{ item.time }} · 成色 {{ item.condition }}</div>
+                                <div class="tags">
+                                  <span class="tag" v-for="tag in item.tags" :key="tag">{{ tag }}</span>
+                                </div>
+                              </div>
+                              <div class="item-actions-col">
+                                <div class="price">¥ {{ item.price }}</div>
+                                <button class="btn ghost" @click="openDetail(item)">详情</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else-if="currentTab === 'publish'">
+                    <div class="card">
+                      <div class="grid cols-2">
+                        <div>
+                          <div class="field"><label>标题 *</label><input v-model="publishForm.title" placeholder="例如：九成新耳机" /></div>
+                          <div class="field"><label>分类 *</label>
+                            <select v-model="publishForm.category">
+                              <option v-for="cat in categories.filter(c => c !== '全部')" :key="cat">{{ cat }}</option>
+                            </select>
+                          </div>
+                          <div class="field"><label>价格 *</label><input v-model="publishForm.price" placeholder="请输入价格" /></div>
+                          <div class="field"><label>成色 *</label><input v-model="publishForm.condition" placeholder="1-10" /></div>
+                          <div class="field"><label>校区 *</label>
+                            <select v-model="publishForm.campus">
+                              <option v-for="campus in campuses" :key="campus">{{ campus }}</option>
+                            </select>
+                          </div>
+                          <div class="field"><label>描述 *</label><textarea v-model="publishForm.desc" placeholder="写清楚配件、瑕疵等"></textarea></div>
+                          <div class="field"><label>标签</label><input v-model="publishForm.tags" placeholder="例如：包邮,可小刀" /></div>
+                          <div class="field actions">
+                            <button class="btn primary" @click="publishItem">发布</button>
+                            <button class="btn ghost" @click="saveDraft">保存草稿</button>
+                          </div>
+                        </div>
+                        <div>
+                          <div class="card muted-bg">
+                            <div class="card-title">图片选择（演示）</div>
+                            <div class="thumb-grid">
+                              <div
+                                v-for="option in imageOptions"
+                                :key="option.id"
+                                :class="['thumb-option', option.id === selectedImageSet ? 'active' : '']"
+                                @click="selectImageSet(option.id)"
+                              >
+                                <img :src="option.images[0]" :alt="option.label" />
+                                <div class="thumb-label">{{ option.label }}</div>
+                              </div>
+                            </div>
+                            <div class="muted" style="margin-top:8px; font-size:12px;">点击选择封面，自动附带备用图。</div>
+                          </div>
+                          <div class="card">
+                            <div class="card-title">发布提示</div>
+                            <div class="muted" style="font-size:12px;">发布后会进入审核流程，审核通过后上架展示。</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else-if="currentTab === 'orders'">
+                    <div class="card">
+                      <div class="tabs">
+                        <button v-for="tab in orderTabs" :key="tab" :class="{ active: orderTab === tab }" @click="setOrderTab(tab)">{{ tab }}</button>
+                      </div>
+                      <table class="table" style="margin-top:12px;">
+                        <thead>
+                          <tr><th>订单号</th><th>商品</th><th>金额</th><th>状态</th><th>时间</th><th>操作</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="order in filteredOrders" :key="order.id">
+                            <td>{{ order.id }}</td>
+                            <td>{{ order.item }}</td>
+                            <td>¥ {{ order.price }}</td>
+                            <td><span class="badge" :class="badgeClass(order.status)">{{ order.status }}</span></td>
+                            <td>{{ order.time }}</td>
+                            <td>
+                              <button v-if="order.status === '待确认'" class="btn primary" @click="payOrder(order)">确认付款</button>
+                              <button v-if="order.status === '待确认'" class="btn ghost" @click="cancelOrder(order)">取消</button>
+                              <button v-if="order.status === '进行中'" class="btn ghost" @click="confirmOrder(order)">确认收货</button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div v-else-if="currentTab === 'messages'">
+                    <div class="card chat">
+                      <div class="chat-list">
+                        <div
+                          v-for="(chat, idx) in chats"
+                          :key="chat.name"
+                          :class="['chat-item', idx === selectedChat ? 'active' : '']"
+                          @click="selectChat(idx)"
+                        >
+                          <div class="chat-name">{{ chat.name }}</div>
+                          <div class="muted">{{ chat.messages[chat.messages.length - 1]?.text }}</div>
+                        </div>
+                      </div>
+                      <div class="chat-room">
+                        <div class="chat-header">
+                          <div class="chat-title">{{ activeChat?.name }}</div>
+                          <div class="muted">在线 · 可约校园面交</div>
+                        </div>
+                        <div class="chat-messages">
+                          <div v-for="(msg, idx) in activeChat?.messages" :key="idx" :class="['bubble', msg.from]">
+                            <div>{{ msg.text }}</div>
+                            <div class="bubble-time">{{ msg.time }}</div>
+                          </div>
+                        </div>
+                        <div class="chat-input">
+                          <input v-model="chatInput" placeholder="输入消息…" />
+                          <button class="btn primary" @click="sendMessage">发送</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else-if="currentTab === 'seller'">
+                    <div class="card">
+                      <div class="tabs">
+                        <button :class="{ active: sellerTab === 'list' }" @click="sellerTab='list'">我的发布</button>
+                        <button @click="currentTab='publish'">发布新商品</button>
+                        <button :class="{ active: sellerTab === 'orders' }" @click="sellerTab='orders'">订单处理</button>
+                        <button :class="{ active: sellerTab === 'finance' }" @click="sellerTab='finance'">财务统计</button>
+                      </div>
+
+                      <div v-if="sellerTab === 'list'" class="list" style="margin-top:14px;">
+                        <div class="card item-row" v-for="item in sellerItems" :key="item.id">
+                          <img class="item-thumb" :src="item.images[0]" :alt="item.title" />
+                          <div class="meta">
+                            <div class="item-title">{{ item.title }}</div>
+                            <div class="muted">状态：{{ item.status }} · 浏览 {{ item.views }}</div>
+                          </div>
+                          <div class="item-actions-col">
+                            <button class="btn ghost" @click="openSellerEdit(item)">编辑</button>
+                            <button class="btn danger" @click="toggleItemStatus(item)">{{ item.status === '上架' ? '下架' : '上架' }}</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div v-else-if="sellerTab === 'orders'" style="margin-top:14px;">
+                        <table class="table">
+                          <thead><tr><th>订单号</th><th>买家</th><th>商品</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+                          <tbody>
+                            <tr v-for="order in sellerOrders" :key="order.id">
+                              <td>{{ order.id }}</td>
+                              <td>{{ order.buyer }}</td>
+                              <td>{{ order.item }}</td>
+                              <td>¥ {{ order.price }}</td>
+                              <td><span class="badge" :class="badgeClass(order.status)">{{ order.status }}</span></td>
+                              <td>
+                                <button v-if="order.status === '待确认'" class="btn primary" @click="sellerApprove(order)">同意</button>
+                                <button v-if="order.status === '待确认'" class="btn ghost" @click="sellerReject(order)">拒绝</button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div v-else-if="sellerTab === 'finance'" style="margin-top:14px;">
+                        <div class="stat-grid">
+                          <div class="stat"><div class="muted">本月成交额</div><div class="price">¥ 3,260</div></div>
+                          <div class="stat"><div class="muted">待结算</div><div class="price">¥ 480</div></div>
+                          <div class="stat"><div class="muted">信用评分</div><div class="price">4.9 / 5</div></div>
+                        </div>
+                        <div class="card chart" style="margin-top:12px;">成交趋势（演示图）</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else-if="currentTab === 'admin'">
+                    <div class="card">
+                      <div class="tabs">
+                        <button :class="{ active: adminTab === 'dashboard' }" @click="adminTab='dashboard'">数据看板</button>
+                        <button :class="{ active: adminTab === 'listings' }" @click="adminTab='listings'">商品审核</button>
+                        <button :class="{ active: adminTab === 'orders' }" @click="adminTab='orders'">订单管理</button>
+                        <button :class="{ active: adminTab === 'finance' }" @click="adminTab='finance'">资金结算</button>
+                        <button :class="{ active: adminTab === 'users' }" @click="adminTab='users'">用户管理</button>
+                      </div>
+
+                      <div v-if="adminTab === 'dashboard'" style="margin-top:14px;">
+                        <div class="stat-grid">
+                          <div class="stat"><div class="muted">活跃用户</div><div class="price">1,280</div></div>
+                          <div class="stat"><div class="muted">新增商品</div><div class="price">268</div></div>
+                          <div class="stat"><div class="muted">成交订单</div><div class="price">92</div></div>
+                        </div>
+                        <div class="grid cols-2" style="margin-top:12px;">
+                          <div class="card chart">交易趋势（演示图）</div>
+                          <div class="card chart">类目分布（演示图）</div>
+                        </div>
+                      </div>
+
+                      <div v-else-if="adminTab === 'listings'" style="margin-top:14px;">
+                        <table class="table">
+                          <thead><tr><th>商品</th><th>发布人</th><th>校区</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+                          <tbody>
+                            <tr v-for="listing in adminListings" :key="listing.id">
+                              <td>{{ listing.title }}</td>
+                              <td>{{ listing.user }}</td>
+                              <td>{{ listing.campus }}</td>
+                              <td>{{ listing.time }}</td>
+                              <td><span class="badge" :class="badgeClass(listing.status)">{{ listing.status }}</span></td>
+                              <td>
+                                <button class="btn primary" @click="adminApprove(listing)">通过</button>
+                                <button class="btn ghost" @click="adminReject(listing)">驳回</button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div v-else-if="adminTab === 'orders'" style="margin-top:14px;">
+                        <table class="table">
+                          <thead><tr><th>订单号</th><th>商品</th><th>买家</th><th>卖家</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+                          <tbody>
+                            <tr v-for="order in adminOrders" :key="order.id">
+                              <td>{{ order.id }}</td>
+                              <td>{{ order.item }}</td>
+                              <td>{{ order.buyer }}</td>
+                              <td>{{ order.seller }}</td>
+                              <td>¥ {{ order.amount }}</td>
+                              <td><span class="badge" :class="badgeClass(order.status)">{{ order.status }}</span></td>
+                              <td>
+                                <button class="btn ghost" @click="adminMarkOrder(order)">标记处理中</button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div v-else-if="adminTab === 'finance'" style="margin-top:14px;">
+                        <div class="stat-grid">
+                          <div class="stat"><div class="muted">平台服务费</div><div class="price">¥ 1,520</div></div>
+                          <div class="stat"><div class="muted">待结算订单</div><div class="price">23</div></div>
+                          <div class="stat"><div class="muted">异常退款</div><div class="price">2</div></div>
+                        </div>
+                        <table class="table" style="margin-top:12px;">
+                          <thead><tr><th>结算单号</th><th>用户</th><th>金额</th><th>状态</th><th>时间</th></tr></thead>
+                          <tbody>
+                            <tr v-for="row in adminSettlements" :key="row.id">
+                              <td>{{ row.id }}</td>
+                              <td>{{ row.user }}</td>
+                              <td>¥ {{ row.amount }}</td>
+                              <td><span class="badge" :class="badgeClass(row.status)">{{ row.status }}</span></td>
+                              <td>{{ row.time }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div v-else-if="adminTab === 'users'" style="margin-top:14px;">
+                        <table class="table">
+                          <thead><tr><th>用户</th><th>校区</th><th>信用</th><th>状态</th><th>注册时间</th><th>操作</th></tr></thead>
+                          <tbody>
+                            <tr v-for="u in adminUsers" :key="u.id">
+                              <td>{{ u.name }}</td>
+                              <td>{{ u.campus }}</td>
+                              <td>{{ u.credit }}</td>
+                              <td><span class="badge" :class="badgeClass(u.status)">{{ u.status }}</span></td>
+                              <td>{{ u.reg }}</td>
+                              <td><button class="btn ghost" @click="toggleUser(u)">{{ u.status === '正常' ? '禁用' : '启用' }}</button></td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>
@@ -334,6 +1143,10 @@
                       <li>收藏商品可快速追踪动态</li>
                       <li>交易优先选择校内安全地点</li>
                     </ul>
+                  </div>
+                  <div class="card">
+                    <div class="card-title">平台公告</div>
+                    <div class="muted">本周已完成 92 笔校内交易，提醒同学选择官方支付通道。</div>
                   </div>
                 </aside>
               </div>
@@ -361,12 +1174,50 @@
                     <div class="muted">标签：{{ detailItem?.tags?.join('、') }}</div>
                     <div class="price">¥ {{ detailItem?.price }}</div>
                     <div class="detail-actions">
-                      <button class="btn ghost">收藏</button>
-                      <button class="btn primary">私聊</button>
+                      <button class="btn ghost" @click="toggleFav(detailItem)">{{ isFav(detailItem?.id) ? '已收藏' : '收藏' }}</button>
+                      <button class="btn primary" @click="startChat(detailItem)">私聊</button>
                       <button class="btn ghost" @click="showDetail=false">关闭</button>
                     </div>
                   </div>
                 </div>
+              </q-card-section>
+            </q-card>
+          </q-dialog>
+
+          <q-dialog v-model="showSellerEdit">
+            <q-card style="width: 640px; max-width: 92vw;">
+              <q-card-section class="row items-center">
+                <div class="text-h6">编辑商品信息</div>
+                <q-space />
+                <q-btn icon="close" flat round dense v-close-popup />
+              </q-card-section>
+              <q-card-section>
+                <div class="grid cols-2">
+                  <div>
+                    <div class="field"><label>标题</label><input v-model="sellerEditForm.title" /></div>
+                    <div class="field"><label>价格</label><input v-model="sellerEditForm.price" /></div>
+                    <div class="field"><label>成色</label><input v-model="sellerEditForm.condition" /></div>
+                  </div>
+                  <div>
+                    <div class="field"><label>校区</label>
+                      <select v-model="sellerEditForm.campus">
+                        <option v-for="campus in campuses" :key="campus">{{ campus }}</option>
+                      </select>
+                    </div>
+                    <div class="field"><label>状态</label>
+                      <select v-model="sellerEditForm.status">
+                        <option>上架</option>
+                        <option>下架</option>
+                        <option>待审核</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="field"><label>描述</label><textarea v-model="sellerEditForm.desc"></textarea></div>
+              </q-card-section>
+              <q-card-section class="row justify-end">
+                <button class="btn ghost" @click="showSellerEdit=false">取消</button>
+                <button class="btn primary" @click="saveSellerEdit">保存</button>
               </q-card-section>
             </q-card>
           </q-dialog>

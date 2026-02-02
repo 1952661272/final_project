@@ -7,7 +7,7 @@ const demoPath = path.join(baseDir, 'campus-trade-demo', 'index.html')
 const outDir = path.join(baseDir, 'report_images')
 
 ;(async () => {
-  const browser = await chromium.launch()
+  const browser = await chromium.launch({ channel: 'chrome' })
   const page = await browser.newPage({ viewport: { width: 1400, height: 820 } })
 
   const fileUrl = `file://${demoPath}`

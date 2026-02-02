@@ -25,7 +25,7 @@ const screens = [
 ]
 
 ;(async () => {
-  const browser = await chromium.launch()
+  const browser = await chromium.launch({ channel: 'chrome' })
   const page = await browser.newPage({ viewport: { width: 1400, height: 820 } })
 
   for (const screen of screens) {
