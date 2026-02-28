@@ -21,9 +21,9 @@
             <div class="result-summary">共 {{ filteredItems.length }} 件 · 价格区间 ¥ {{ priceRange }}</div>
           </div>
           <div class="sort-row">
-            <q-btn flat :class="sortClass('最新')" label="最新" @click="filters.sort = '最新'" />
-            <q-btn flat :class="sortClass('价格升序')" label="价格↑" @click="filters.sort = '价格升序'" />
-            <q-btn flat :class="sortClass('价格降序')" label="价格↓" @click="filters.sort = '价格降序'" />
+            <q-btn flat :class="sortClass('最新')" label="最新" @click="setSort('最新')" />
+            <q-btn flat :class="sortClass('价格升序')" label="价格↑" @click="setSort('价格升序')" />
+            <q-btn flat :class="sortClass('价格降序')" label="价格↓" @click="setSort('价格降序')" />
           </div>
         </div>
 
@@ -34,7 +34,7 @@
             clickable
             class="chip"
             :class="{ active: filters.category === cat }"
-            @click="filters.category = cat"
+            @click="setCategory(cat)"
           >
             {{ cat }}
           </q-chip>
@@ -65,32 +65,54 @@
 
 <script setup>
 import { computed, reactive, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { categories, campuses } from 'src/data/mock'
 import { store } from 'src/data/store'
 
 const route = useRoute()
+const router = useRouter()
 
 const priceOptions = ['全部', '0-100', '100-500', '500-2000', '2000+']
 const conditionOptions = ['全部', '9-10', '8-9', '7-8', '7以下']
 
-const defaultFilters = {
-  keyword: route.query.keyword || '',
-  category: route.query.category || '全部',
-  campus: '全部',
-  price: '全部',
-  condition: '全部',
-  sort: '最新'
+function normalizeFilters (query = {}, params = {}) {
+  const paramCategory = String(params.category || '')
+  const mergedCategory = query.category || paramCategory
+  const normalized = {
+    keyword: String(query.keyword || ''),
+    category: categories.includes(String(mergedCategory || '')) ? String(mergedCategory) : '全部',
+    campus: campuses.includes(String(query.campus || '')) ? String(query.campus) : '全部',
+    price: priceOptions.includes(String(query.price || '')) ? String(query.price) : '全部',
+    condition: conditionOptions.includes(String(query.condition || '')) ? String(query.condition) : '全部',
+    sort: ['最新', '价格升序', '价格降序'].includes(String(query.sort || '')) ? String(query.sort) : '最新'
+  }
+  return normalized
 }
 
-const filters = reactive({ ...defaultFilters })
+function buildQueryFromFilters (payload) {
+  return Object.fromEntries(
+    Object.entries(payload)
+      .map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value])
+      .filter(([key, value]) => key !== 'category' && value && value !== '全部' && value !== '最新')
+  )
+}
+
+function buildRouteFromFilters (payload) {
+  const query = buildQueryFromFilters(payload)
+  if (payload.category && payload.category !== '全部') {
+    return { name: 'search-category', params: { category: payload.category }, query }
+  }
+  return { name: 'search', query }
+}
+
+const filters = reactive(normalizeFilters(route.query, route.params))
 
 watch(
-  () => route.query,
-  (query) => {
-    if (query.category) filters.category = query.category
-    if (query.keyword) filters.keyword = query.keyword
-  }
+  () => [route.query, route.params.category],
+  ([query]) => {
+    Object.assign(filters, normalizeFilters(query, route.params))
+  },
+  { immediate: true }
 )
 
 const filteredItems = computed(() => {
@@ -140,21 +162,25 @@ const priceRange = computed(() => {
 })
 
 function applyFilters () {
-  // computed handles it
+  router.replace(buildRouteFromFilters(filters))
 }
 
 function resetFilters () {
-  Object.assign(filters, {
-    keyword: route.query.keyword || '',
-    category: route.query.category || '全部',
-    campus: '全部',
-    price: '全部',
-    condition: '全部',
-    sort: '最新'
-  })
+  Object.assign(filters, normalizeFilters({}))
+  router.replace({ name: 'search', query: {} })
 }
 
 function sortClass (value) {
   return filters.sort === value ? 'sort-active' : ''
+}
+
+function setSort (value) {
+  filters.sort = value
+  applyFilters()
+}
+
+function setCategory (value) {
+  filters.category = value
+  applyFilters()
 }
 </script>

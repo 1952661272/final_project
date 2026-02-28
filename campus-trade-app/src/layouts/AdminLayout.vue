@@ -1,5 +1,10 @@
 <template>
   <q-layout view="lHh Lpr lFf" class="admin-shell">
+    <div class="layout-orbs admin-orbs" aria-hidden="true">
+      <span class="orb orb-a"></span>
+      <span class="orb orb-b"></span>
+      <span class="orb orb-c"></span>
+    </div>
     <q-header elevated class="admin-header">
       <q-toolbar>
         <div class="brand">
@@ -10,8 +15,8 @@
           </div>
         </div>
         <q-space />
-        <q-btn flat icon="home" label="返回前台" to="/" />
-        <q-btn flat icon="logout" label="退出" @click="logout" />
+        <q-btn flat icon="home" label="返回前台" class="header-action-btn" to="/" />
+        <q-btn flat icon="logout" label="退出" class="header-action-btn" @click="logout" />
       </q-toolbar>
     </q-header>
 

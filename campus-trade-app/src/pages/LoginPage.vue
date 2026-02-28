@@ -1,12 +1,25 @@
 <template>
   <q-page class="page login-page">
-    <q-card class="login-card" flat bordered>
-      <div class="section-title">用户登录</div>
-      <q-input v-model="form.name" outlined dense label="昵称 / 学号" class="q-mb-md" />
-      <q-input v-model="form.password" outlined dense type="password" label="密码" class="q-mb-md" />
-      <q-btn unelevated class="btn-primary full" label="登录" @click="handleLogin" />
-      <div class="muted" style="margin-top: 10px;">默认账号：张同学 / 任意密码</div>
-    </q-card>
+    <div class="auth-wrap">
+      <q-card class="login-card auth-card" flat bordered>
+        <div class="section-title">用户登录</div>
+        <q-input v-model="form.name" outlined dense label="昵称 / 学号" class="q-mb-md" />
+        <q-input v-model="form.password" outlined dense type="password" label="密码" class="q-mb-md" />
+        <q-btn unelevated class="btn-primary full" label="登录" @click="handleLogin" />
+        <div class="muted q-mt-sm">默认账号：张同学 / 任意密码</div>
+      </q-card>
+
+      <q-card class="auth-aside" flat>
+        <div class="auth-kicker">Campus Trade</div>
+        <div class="auth-title">让闲置更快找到下一位主人</div>
+        <div class="auth-desc">同校认证、即时沟通、流程闭环，面向校园场景打造轻量安全的二手交易体验。</div>
+        <div class="auth-points">
+          <div>1. 统一身份与认证标识</div>
+          <div>2. 发布-审核-成交全流程追踪</div>
+          <div>3. 支持买卖双角色一体管理</div>
+        </div>
+      </q-card>
+    </div>
   </q-page>
 </template>
 

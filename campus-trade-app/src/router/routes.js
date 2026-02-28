@@ -5,6 +5,7 @@ const routes = [
     children: [
       { path: '', name: 'home', component: () => import('pages/HomePage.vue') },
       { path: 'search', name: 'search', component: () => import('pages/SearchPage.vue') },
+      { path: 'category/:category', name: 'search-category', component: () => import('pages/SearchPage.vue') },
       { path: 'detail/:id', name: 'detail', component: () => import('pages/DetailPage.vue') },
       { path: 'publish', name: 'publish', component: () => import('pages/PublishPage.vue'), meta: { requiresAuth: true } },
       { path: 'messages', name: 'messages', component: () => import('pages/MessagesPage.vue'), meta: { requiresAuth: true } },

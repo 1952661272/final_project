@@ -13,11 +13,20 @@
       </div>
     </div>
     <div class="trend-grid">
-      <div v-for="point in series" :key="point.label" class="trend-row">
+      <div
+        v-for="(point, idx) in series"
+        :key="point.label"
+        class="trend-row animate-in"
+        :style="{ '--delay': `${idx * 0.05}s` }"
+      >
         <div class="trend-label">{{ point.label }}</div>
         <div class="trend-bars">
-          <div class="bar items" :style="{ width: barWidth(point.items) }"></div>
-          <div class="bar orders" :style="{ width: barWidth(point.orders) }"></div>
+          <div class="bar-track">
+            <div class="bar items" :style="{ width: barWidth(point.items) }"></div>
+          </div>
+          <div class="bar-track">
+            <div class="bar orders" :style="{ width: barWidth(point.orders) }"></div>
+          </div>
         </div>
         <div class="trend-value">{{ point.items }} / {{ point.orders }}</div>
       </div>
@@ -26,7 +35,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 const props = defineProps({
   series: {
@@ -34,6 +43,7 @@ const props = defineProps({
     default: () => []
   }
 })
+const ready = ref(false)
 
 const maxValue = computed(() => {
   if (!props.series.length) return 1
@@ -41,8 +51,15 @@ const maxValue = computed(() => {
 })
 
 function barWidth (value) {
+  if (!ready.value) return '0%'
   if (!value) return '0%'
   const percent = (value / maxValue.value) * 100
   return `${Math.max(percent, 10)}%`
 }
+
+onMounted(() => {
+  requestAnimationFrame(() => {
+    ready.value = true
+  })
+})
 </script>
