@@ -261,14 +261,16 @@ function doSearch () {
 }
 
 onMounted(() => {
-  if (!store.state.user.loggedIn && localStorage.getItem('user_auth') === '1') {
-    const name = store.state.user.name || '张同学'
+  void store.bootstrap().then(() => {
+    if (store.state.user.loggedIn || localStorage.getItem('user_auth') !== '1') return
+    const name = localStorage.getItem('user_name') || '张同学'
     const user = store.state.users.find((item) => item.name === name)
     if (user && user.status === '禁用') {
       localStorage.removeItem('user_auth')
+      localStorage.removeItem('user_name')
       return
     }
     store.login(name)
-  }
+  })
 })
 </script>

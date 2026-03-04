@@ -43,7 +43,6 @@ function handleLogin () {
     Notify.create({ type: 'negative', message: '该账号已被禁用，请联系管理员' })
     return
   }
-  localStorage.setItem('user_auth', '1')
   store.login(form.name)
   const redirect = route.query.redirect || '/'
   router.push(redirect)

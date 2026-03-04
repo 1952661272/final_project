@@ -27,16 +27,22 @@
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { Notify } from 'quasar'
+import { store } from 'src/data/store'
 
 const router = useRouter()
 const form = reactive({ account: '', password: '' })
 
-function login () {
+async function login () {
   if (!form.account || !form.password) {
     Notify.create({ type: 'warning', message: '请输入管理员账号与密码' })
     return
   }
-  localStorage.setItem('admin_auth', '1')
-  router.push({ name: 'admin-dashboard' })
+  try {
+    await store.adminLogin(form.account, form.password)
+    localStorage.setItem('admin_auth', '1')
+    router.push({ name: 'admin-dashboard' })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '管理员登录失败' })
+  }
 }
 </script>

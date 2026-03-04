@@ -49,12 +49,12 @@ const activeChat = computed(() => chats[activeIndex.value])
 
 function selectChat (idx) {
   activeIndex.value = idx
-  store.state.selectedChat = idx
+  store.setSelectedChat(idx)
 }
 
 function send () {
   if (!input.value.trim()) return
-  store.state.selectedChat = activeIndex.value
+  store.setSelectedChat(activeIndex.value)
   store.sendMessage(input.value)
   input.value = ''
 }
