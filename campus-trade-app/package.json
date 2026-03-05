@@ -8,13 +8,14 @@
   "private": true,
   "scripts": {
     "test": "echo \"No test specified\" && exit 0",
-    "backend:dev": "node backend/server.js",
+    "backend:dev": "node --env-file-if-exists=.env.local backend/server.js",
     "dev": "quasar dev",
     "build": "quasar build",
     "postinstall": "quasar prepare"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",
+    "express": "^5.2.1",
     "mysql2": "^3.18.2",
     "quasar": "^2.16.0",
     "vue": "^3.5.22",
