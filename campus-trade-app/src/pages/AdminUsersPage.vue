@@ -62,9 +62,13 @@ const userColumns = [
   { name: 'action', label: '操作', field: 'action' }
 ]
 
-function toggleUser (user) {
+async function toggleUser (user) {
   const nextStatus = user.status === '正常' ? '禁用' : '正常'
-  store.updateUserStatus(user.id, nextStatus)
-  Notify.create({ type: 'info', message: `${user.name} 已${nextStatus}` })
+  try {
+    await store.updateUserStatus(user.id, nextStatus)
+    Notify.create({ type: 'info', message: `${user.name} 已${nextStatus}` })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '用户状态更新失败' })
+  }
 }
 </script>

@@ -163,7 +163,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { categories } from 'src/data/mock'
 import { store } from 'src/data/store'
@@ -171,6 +171,7 @@ import { store } from 'src/data/store'
 const leftDrawerOpen = ref(false)
 const searchKeyword = ref('')
 const router = useRouter()
+let refreshTimer = null
 const categoryMeta = {
   数码: { icon: 'devices_other', desc: '手机、平板、电脑与配件', tone: '#0ea5e9' },
   教材: { icon: 'menu_book', desc: '课程教材与考研资料', tone: '#16a34a' },
@@ -260,6 +261,20 @@ function doSearch () {
   router.push({ name: 'search', query: { keyword: searchKeyword.value.trim() } })
 }
 
+function refreshData () {
+  void store.refresh()
+}
+
+function handleVisibilityChange () {
+  if (document.visibilityState === 'visible') {
+    refreshData()
+  }
+}
+
+function handleStorage () {
+  refreshData()
+}
+
 onMounted(() => {
   void store.bootstrap().then(() => {
     if (store.state.user.loggedIn || localStorage.getItem('user_auth') !== '1') return
@@ -272,5 +287,17 @@ onMounted(() => {
     }
     store.login(name)
   })
+
+  refreshTimer = window.setInterval(refreshData, 5000)
+  window.addEventListener('focus', refreshData)
+  window.addEventListener('storage', handleStorage)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  if (refreshTimer) window.clearInterval(refreshTimer)
+  window.removeEventListener('focus', refreshData)
+  window.removeEventListener('storage', handleStorage)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>

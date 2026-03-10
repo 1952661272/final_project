@@ -180,10 +180,14 @@ function handleBanner (banner) {
   }
 }
 
-function confirmVerify () {
+async function confirmVerify () {
   if (!store.state.user.loggedIn) return
-  store.verifyCurrentUser()
-  Notify.create({ type: 'positive', message: '认证信息已提交' })
-  showVerify.value = false
+  try {
+    await store.verifyCurrentUser()
+    Notify.create({ type: 'positive', message: '认证信息已提交' })
+    showVerify.value = false
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '认证提交失败' })
+  }
 }
 </script>

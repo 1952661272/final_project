@@ -92,26 +92,34 @@ const isAvailable = computed(() => item && item.status === '上架')
 const sellerInfo = computed(() => store.state.users.find((user) => user.name === item?.seller))
 const sellerListings = computed(() => store.state.items.filter((it) => it.seller === item?.seller && it.status === '上架').length)
 
-function buyNow () {
+async function buyNow () {
   if (!item || !isAvailable.value) return
   if (!store.state.user.loggedIn) {
     Notify.create({ type: 'warning', message: '请先登录再下单' })
     router.push({ name: 'login', query: { redirect: route.fullPath } })
     return
   }
-  store.createOrder(item)
-  Notify.create({ type: 'positive', message: '订单已创建' })
-  router.push({ name: 'profile' })
+  try {
+    await store.createOrder(item)
+    Notify.create({ type: 'positive', message: '订单已创建' })
+    router.push({ name: 'profile' })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '下单失败' })
+  }
 }
 
-function chatNow () {
+async function chatNow () {
   if (!item || !isAvailable.value) return
   if (!store.state.user.loggedIn) {
     Notify.create({ type: 'warning', message: '请先登录再私聊' })
     router.push({ name: 'login', query: { redirect: route.fullPath } })
     return
   }
-  store.startChat(item.seller)
-  router.push({ name: 'messages' })
+  try {
+    await store.startChat(item)
+    router.push({ name: 'messages' })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '创建会话失败' })
+  }
 }
 </script>

@@ -1,6 +1,10 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const MYSQL_SCHEMA_FILE = resolve(__dirname, '../docs/database/schema_mysql.sql')
 
 export class JsonStateStore {
   constructor (filePath) {
@@ -41,7 +45,13 @@ export class MysqlStateStore {
       throw new Error('mysql2 is required. Run: npm install mysql2')
     }
 
-    this.pool = mysql.createPool(this.mysqlUrl)
+    this.pool = mysql.createPool({
+      uri: this.mysqlUrl,
+      multipleStatements: true
+    })
+
+    const schemaSql = await readFile(MYSQL_SCHEMA_FILE, 'utf-8')
+    await this.pool.query(schemaSql)
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS app_state (
         id TINYINT PRIMARY KEY,
@@ -70,4 +80,3 @@ export class MysqlStateStore {
     )
   }
 }
-

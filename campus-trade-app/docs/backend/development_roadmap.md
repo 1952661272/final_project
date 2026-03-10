@@ -1,10 +1,11 @@
 # 系统继续开发计划（后端落地版，文档同步更新）
 
 ## 1. 当前状态
-1. 前端主流程已完整实现（Quasar + 本地状态驱动）。
-2. 后端与数据库尚未接入生产链路。
+1. 前端主流程已完整实现（Quasar + 真实领域 API 驱动，保留本地 seed 作为降级回退）。
+2. 后端已拆分为 `app + repository + service` 结构，并完成主流程 API 接入。
 3. 前端分类导航路由化已完成：支持 `/#/category/{分类名}`。
 4. 搜索页已支持 query 与 params 联动筛选，并可回写 URL。
+5. 数据库设计已补齐 `ct_listing_tag`，用于承接前台商品标签能力。
 
 ## 2. 本阶段已完成沉淀（可复用）
 1. 路由规范沉淀：`/search` + `/category/:category` 双入口。
@@ -35,6 +36,7 @@
 6. `POST /api/v1/listings/{listingId}/favorite`
 7. `DELETE /api/v1/listings/{listingId}/favorite`
 8. `POST /api/v1/admin/listings/{listingId}/review`
+9. `GET /api/v1/favorites`
 
 ### 4.3 订单
 1. `POST /api/v1/orders`
@@ -54,6 +56,7 @@
 2. 时间统一 UTC 存储，API 输出 ISO8601。
 3. 列表统一分页结构：`{ list, page, pageSize, total }`。
 4. 路由筛选参数与接口参数保持语义一致：`category/campus/price/condition/sort`。
+5. 商品标签统一输出为 `listing.tags: string[]`，数据库通过 `ct_listing_tag` 持久化。
 
 ## 6. 分阶段实施
 ### 阶段A（1-2周）
@@ -95,3 +98,8 @@
 2. 分类导航与快速筛选可稳定跳转并复现结果。
 3. 文档描述与代码行为一致，不出现误导性上线表述。
 4. 后端接入后前端不再以 localStorage 为主数据源。
+
+## 10. 本阶段不覆盖
+1. “保存草稿”仅保留 UI 兼容提示，不做持久化实现。
+2. “查看评价”入口暂不接入评价表与评价页面。
+3. 不新增通知中心、支付、注册/找回密码功能。

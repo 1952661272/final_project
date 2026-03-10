@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS ct_conversation;
 DROP TABLE IF EXISTS ct_order_status_log;
 DROP TABLE IF EXISTS ct_order;
 DROP TABLE IF EXISTS ct_favorite;
+DROP TABLE IF EXISTS ct_listing_tag;
 DROP TABLE IF EXISTS ct_listing_image;
 DROP TABLE IF EXISTS ct_listing_review;
 DROP TABLE IF EXISTS ct_listing;
@@ -135,6 +136,19 @@ CREATE TABLE ct_listing_image (
   CONSTRAINT fk_listing_image_listing FOREIGN KEY (listing_id) REFERENCES ct_listing(listing_id),
   KEY idx_listing_image_listing (listing_id, sort_no)
 ) ENGINE=InnoDB COMMENT='商品图片表';
+
+-- 商品标签表（支持前台标签 badges）
+CREATE TABLE ct_listing_tag (
+  tag_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT COMMENT '标签ID',
+  listing_id BIGINT UNSIGNED NOT NULL COMMENT '商品ID',
+  tag_name VARCHAR(64) NOT NULL COMMENT '标签名称',
+  sort_no INT NOT NULL DEFAULT 0 COMMENT '排序号',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_listing_tag_listing FOREIGN KEY (listing_id) REFERENCES ct_listing(listing_id),
+  UNIQUE KEY uk_listing_tag_name (listing_id, tag_name),
+  KEY idx_listing_tag_listing (listing_id, sort_no)
+) ENGINE=InnoDB COMMENT='商品标签表';
 
 -- 商品审核记录
 CREATE TABLE ct_listing_review (

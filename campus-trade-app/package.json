@@ -7,7 +7,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "echo \"No test specified\" && exit 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "backend:dev": "node --env-file-if-exists=.env.local backend/server.js",
     "dev": "quasar dev",
     "build": "quasar build",
@@ -24,7 +25,9 @@
   "devDependencies": {
     "@quasar/app-vite": "^2.1.0",
     "autoprefixer": "^10.4.2",
-    "postcss": "^8.4.14"
+    "postcss": "^8.4.14",
+    "supertest": "^7.2.2",
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": "^28 || ^26 || ^24 || ^22 || ^20",

@@ -47,14 +47,46 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { store } from 'src/data/store'
 
 const router = useRouter()
 const drawer = ref(true)
+let refreshTimer = null
+
+function refreshData () {
+  void store.refresh()
+}
+
+function handleVisibilityChange () {
+  if (document.visibilityState === 'visible') {
+    refreshData()
+  }
+}
+
+function handleStorage () {
+  refreshData()
+}
+
+onMounted(() => {
+  refreshData()
+  refreshTimer = window.setInterval(refreshData, 5000)
+  window.addEventListener('focus', refreshData)
+  window.addEventListener('storage', handleStorage)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  if (refreshTimer) window.clearInterval(refreshTimer)
+  window.removeEventListener('focus', refreshData)
+  window.removeEventListener('storage', handleStorage)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
 
 function logout () {
   localStorage.removeItem('admin_auth')
+  localStorage.removeItem('admin_account')
   router.push({ name: 'admin-login' })
 }
 </script>

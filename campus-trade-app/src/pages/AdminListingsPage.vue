@@ -90,14 +90,22 @@ const listingColumns = [
   { name: 'action', label: '操作', field: 'action' }
 ]
 
-function approveItem (item) {
-  store.reviewItem(item.id, '上架')
-  Notify.create({ type: 'positive', message: `已通过：${item.title}` })
+async function approveItem (item) {
+  try {
+    await store.reviewItem(item.id, '上架')
+    Notify.create({ type: 'positive', message: `已通过：${item.title}` })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '审核失败' })
+  }
 }
 
-function rejectItem (item) {
-  store.reviewItem(item.id, '驳回')
-  Notify.create({ type: 'warning', message: `已驳回：${item.title}` })
+async function rejectItem (item) {
+  try {
+    await store.reviewItem(item.id, '驳回')
+    Notify.create({ type: 'warning', message: `已驳回：${item.title}` })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '审核失败' })
+  }
 }
 
 function openDetail (item) {

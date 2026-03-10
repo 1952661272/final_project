@@ -33,7 +33,7 @@ const router = useRouter()
 const route = useRoute()
 const form = reactive({ name: '张同学', password: '' })
 
-function handleLogin () {
+async function handleLogin () {
   if (!form.name) {
     Notify.create({ type: 'warning', message: '请输入账号' })
     return
@@ -43,8 +43,12 @@ function handleLogin () {
     Notify.create({ type: 'negative', message: '该账号已被禁用，请联系管理员' })
     return
   }
-  store.login(form.name)
-  const redirect = route.query.redirect || '/'
-  router.push(redirect)
+  try {
+    await store.login(form.name)
+    const redirect = route.query.redirect || '/'
+    router.push(redirect)
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '登录失败' })
+  }
 }
 </script>

@@ -1,12 +1,12 @@
 # 校园二手交易平台数据库设计说明
 
 ## 1. 设计目标
-1. 覆盖前端已实现核心能力：用户、商品、审核、订单、消息、收藏、后台治理。
+1. 覆盖前端已实现核心能力：用户、商品、商品标签、审核、订单、消息、收藏、后台治理。
 2. 支持后续后端接入与数据持久化。
 3. 保持筛选字段语义与前端路由参数一致。
 
 ## 2. 当前状态声明
-1. 数据库结构设计与建表脚本已完成。
+1. 数据库结构设计与建表脚本已完成首版，并已补齐前台 `tags` 所需的标签建模。
 2. 当前运行版本尚未接入真实数据库。
 3. 本文档属于“设计完成、待接入实现”状态。
 
@@ -19,11 +19,12 @@
 ## 4. E-R 关系（文本版）
 1. `ct_user` 1:N `ct_listing`。
 2. `ct_listing` 1:N `ct_listing_image`。
-3. `ct_user` N:M `ct_listing`（`ct_favorite`）。
-4. `ct_listing` 1:N `ct_order`。
-5. `ct_order` 1:N `ct_order_status_log`。
-6. `ct_listing + buyer_id + seller_id` 唯一确定 `ct_conversation`。
-7. `ct_conversation` 1:N `ct_message`。
+3. `ct_listing` 1:N `ct_listing_tag`。
+4. `ct_user` N:M `ct_listing`（`ct_favorite`）。
+5. `ct_listing` 1:N `ct_order`。
+6. `ct_order` 1:N `ct_order_status_log`。
+7. `ct_listing + buyer_id + seller_id` 唯一确定 `ct_conversation`。
+8. `ct_conversation` 1:N `ct_message`。
 
 ## 5. 状态字典
 ### 5.1 用户状态
@@ -74,9 +75,10 @@
 ## 8. 前端字段映射（关键）
 1. `item.id` -> `ct_listing.listing_id`。
 2. `item.images[]` -> `ct_listing_image`。
-3. `item.status` -> `ct_listing.listing_status`。
-4. `order.id`（展示）-> `ct_order.order_no`。
-5. `chat.messages[]` -> `ct_message`。
+3. `item.tags[]` -> `ct_listing_tag`。
+4. `item.status` -> `ct_listing.listing_status`。
+5. `order.id`（展示）-> `ct_order.order_no`。
+6. `chat.messages[]` -> `ct_message`。
 
 ## 9. 迁移建议
 1. 阶段1：接入用户、商品、审核、订单四大表。

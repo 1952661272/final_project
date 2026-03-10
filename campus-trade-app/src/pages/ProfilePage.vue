@@ -358,14 +358,22 @@ function resizeImage (file) {
   })
 }
 
-function updateBuyStatus (id, status) {
-  store.updateOrderStatus(id, status)
-  Notify.create({ type: 'positive', message: `订单状态已更新为 ${status}` })
+async function updateBuyStatus (id, status) {
+  try {
+    await store.updateOrderStatus(id, status)
+    Notify.create({ type: 'positive', message: `订单状态已更新为 ${status}` })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '订单状态更新失败' })
+  }
 }
 
-function updateSellStatus (id, status) {
-  store.updateSellerOrderStatus(id, status)
-  Notify.create({ type: 'positive', message: `订单状态已更新为 ${status}` })
+async function updateSellStatus (id, status) {
+  try {
+    await store.updateSellerOrderStatus(id, status)
+    Notify.create({ type: 'positive', message: `订单状态已更新为 ${status}` })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '订单状态更新失败' })
+  }
 }
 
 function openEdit (item) {
@@ -401,43 +409,59 @@ function setEditCover (idx) {
   editImages.value.unshift(img)
 }
 
-function saveEdit () {
+async function saveEdit () {
   if (editImages.value.length === 0) {
     Notify.create({ type: 'warning', message: '请至少保留 1 张商品图片' })
     return
   }
-  store.updateItem(editForm.value.id, {
-    title: editForm.value.title,
-    price: editForm.value.price,
-    condition: editForm.value.condition,
-    desc: editForm.value.desc,
-    images: [...editImages.value]
-  })
-  const target = store.state.items.find((item) => item.id === editForm.value.id)
-  if (target && target.status === '驳回') {
-    store.setItemStatus(target.id, '待审核')
+  try {
+    await store.updateItem(editForm.value.id, {
+      title: editForm.value.title,
+      price: editForm.value.price,
+      condition: editForm.value.condition,
+      desc: editForm.value.desc,
+      images: [...editImages.value]
+    })
+    const target = store.state.items.find((item) => item.id === editForm.value.id)
+    if (target && target.status === '驳回') {
+      await store.setItemStatus(target.id, '待审核')
+    }
+    Notify.create({ type: 'positive', message: '商品信息已更新' })
+    showEdit.value = false
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '商品更新失败' })
   }
-  Notify.create({ type: 'positive', message: '商品信息已更新' })
-  showEdit.value = false
 }
 
 function notify (message) {
   Notify.create({ type: 'info', message })
 }
 
-function toggleStatus (item) {
-  store.toggleItemStatus(item.id)
-  Notify.create({ type: 'info', message: `商品已${item.status}` })
+async function toggleStatus (item) {
+  try {
+    await store.toggleItemStatus(item.id)
+    Notify.create({ type: 'info', message: '商品状态已更新' })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '商品状态更新失败' })
+  }
 }
 
-function recallItem (item) {
-  store.setItemStatus(item.id, '下架')
-  Notify.create({ type: 'info', message: '商品已撤回' })
+async function recallItem (item) {
+  try {
+    await store.setItemStatus(item.id, '下架')
+    Notify.create({ type: 'info', message: '商品已撤回' })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '撤回失败' })
+  }
 }
 
-function resubmitItem (item) {
-  store.setItemStatus(item.id, '待审核')
-  Notify.create({ type: 'positive', message: '已重新提交审核' })
+async function resubmitItem (item) {
+  try {
+    await store.setItemStatus(item.id, '待审核')
+    Notify.create({ type: 'positive', message: '已重新提交审核' })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '重新提交失败' })
+  }
 }
 
 function openOrderDetail (order, type) {
