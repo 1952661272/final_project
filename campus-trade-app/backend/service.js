@@ -97,10 +97,181 @@ function nextOrderId(state) {
   return `O${Date.now()}${state.meta.nextOrderSeq++}`
 }
 
-function createError(status, message) {
+const CATEGORY_WHITELIST = new Set([
+  '\u6570\u7801',
+  '\u6559\u6750',
+  '\u751f\u6d3b\u7528\u54c1',
+  '\u4ea4\u901a\u5de5\u5177',
+  '\u79df\u623f'
+])
+
+const CAMPUS_WHITELIST = new Set([
+  '\u5317\u6821\u533a',
+  '\u5357\u6821\u533a',
+  '\u4e1c\u6821\u533a'
+])
+
+const SHIPPING_WHITELIST = new Set([
+  '\u5305\u90ae',
+  '\u4e0d\u5305\u90ae',
+  '\u81ea\u63d0'
+])
+
+const METHOD_WHITELIST = new Set([
+  '\u9762\u4ea4\u4f18\u5148',
+  '\u9762\u4ea4',
+  '\u5feb\u9012',
+  '\u9762\u4ea4+\u5feb\u9012',
+  '\u9762\u4ea4/\u5feb\u9012',
+  '\u4ec5\u9762\u4ea4',
+  '\u9762\u4ea4/\u81ea\u53d6'
+])
+
+const PLACEHOLDER_PATTERN = /(\?{3,}|？{3,})/
+
+const USER_STATUS_ALIAS = new Map([
+  ['\u6b63\u5e38', '\u6b63\u5e38'],
+  ['\u7981\u7528', '\u7981\u7528'],
+  ['NORMAL', '\u6b63\u5e38'],
+  ['DISABLED', '\u7981\u7528']
+])
+
+const LISTING_STATUS_ALIAS = new Map([
+  [LISTING_STATUS.DRAFT, LISTING_STATUS.DRAFT],
+  [LISTING_STATUS.PENDING, LISTING_STATUS.PENDING],
+  [LISTING_STATUS.PUBLISHED, LISTING_STATUS.PUBLISHED],
+  [LISTING_STATUS.SOLD, LISTING_STATUS.SOLD],
+  [LISTING_STATUS.OFFLINE, LISTING_STATUS.OFFLINE],
+  [LISTING_STATUS.REJECTED, LISTING_STATUS.REJECTED],
+  [LISTING_STATUS.TRADING, LISTING_STATUS.TRADING],
+  ['DRAFT', LISTING_STATUS.DRAFT],
+  ['PENDING', LISTING_STATUS.PENDING],
+  ['PUBLISHED', LISTING_STATUS.PUBLISHED],
+  ['SOLD', LISTING_STATUS.SOLD],
+  ['OFFLINE', LISTING_STATUS.OFFLINE],
+  ['REJECTED', LISTING_STATUS.REJECTED],
+  ['TRADING', LISTING_STATUS.TRADING]
+])
+
+function createError(status, message, details = null) {
   const error = new Error(message)
   error.status = status
+  if (details) error.details = details
   return error
+}
+
+function assertNoPlaceholder(value, field) {
+  const text = String(value || '').trim()
+  if (!text) return
+  if (PLACEHOLDER_PATTERN.test(text)) {
+    throw createError(400, `${field} 包含非法占位符`, [{ field, code: 'invalid_placeholder', message: `${field} contains placeholder` }])
+  }
+}
+
+function normalizeCampus(value, field = 'campus') {
+  const text = String(value || '').trim()
+  if (!text || !CAMPUS_WHITELIST.has(text)) {
+    throw createError(400, '校区不合法', [{ field, code: 'invalid_enum', message: 'campus is not in whitelist' }])
+  }
+  return text
+}
+
+function normalizeCategory(value, field = 'category') {
+  const text = String(value || '').trim()
+  if (!text || !CATEGORY_WHITELIST.has(text)) {
+    throw createError(400, '分类不合法', [{ field, code: 'invalid_enum', message: 'category is not in whitelist' }])
+  }
+  return text
+}
+
+function normalizeShipping(value, field = 'shipping') {
+  const text = String(value || '').trim()
+  if (!text || !SHIPPING_WHITELIST.has(text)) {
+    throw createError(400, '物流方式不合法', [{ field, code: 'invalid_enum', message: 'shipping is not in whitelist' }])
+  }
+  return text
+}
+
+function normalizeMethod(value, field = 'method') {
+  const text = String(value || '').trim()
+  if (!text || !METHOD_WHITELIST.has(text)) {
+    throw createError(400, '交易方式不合法', [{ field, code: 'invalid_enum', message: 'method is not in whitelist' }])
+  }
+  return text
+}
+
+function normalizeListingStatusStrict(value, { allowTrading = false } = {}) {
+  const text = String(value || '').trim()
+  const normalized = LISTING_STATUS_ALIAS.get(text)
+  if (!normalized) {
+    throw createError(400, '商品状态不合法', [{ field: 'status', code: 'invalid_enum', message: 'status is invalid' }])
+  }
+  if (!allowTrading && normalized === LISTING_STATUS.TRADING) {
+    throw createError(400, '商品状态不合法', [{ field: 'status', code: 'invalid_enum', message: 'status TRADING is readonly' }])
+  }
+  return normalized
+}
+
+function normalizeUserStatusStrict(value) {
+  const text = String(value || '').trim().toUpperCase()
+  const normalized = USER_STATUS_ALIAS.get(text) || USER_STATUS_ALIAS.get(String(value || '').trim())
+  if (!normalized) {
+    throw createError(400, '用户状态不合法', [{ field: 'status', code: 'invalid_enum', message: 'status is invalid' }])
+  }
+  return normalized
+}
+
+function normalizeTags(value) {
+  if (value === undefined) return undefined
+  if (!Array.isArray(value)) {
+    throw createError(400, '标签格式不合法', [{ field: 'tags', code: 'invalid_type', message: 'tags must be array' }])
+  }
+  const normalized = value
+    .map((tag) => String(tag || '').trim())
+    .filter(Boolean)
+  if (normalized.some((tag) => PLACEHOLDER_PATTERN.test(tag))) {
+    throw createError(400, '标签包含非法占位符', [{ field: 'tags', code: 'invalid_placeholder', message: 'tags contains placeholder' }])
+  }
+  return [...new Set(normalized)]
+}
+
+function normalizeImages(value, { required = false } = {}) {
+  if (value === undefined) {
+    if (required) throw createError(400, '至少上传一张图片', [{ field: 'images', code: 'required', message: 'images is required' }])
+    return undefined
+  }
+  if (!Array.isArray(value)) {
+    throw createError(400, '图片格式不合法', [{ field: 'images', code: 'invalid_type', message: 'images must be array' }])
+  }
+  const normalized = value.map((item) => String(item || '').trim()).filter(Boolean)
+  if (required && normalized.length === 0) {
+    throw createError(400, '至少上传一张图片', [{ field: 'images', code: 'required', message: 'images is required' }])
+  }
+  return normalized
+}
+
+function normalizePrice(value, { required = false } = {}) {
+  if (value === undefined || value === null || value === '') {
+    if (required) throw createError(400, '价格不能为空', [{ field: 'price', code: 'required', message: 'price is required' }])
+    return undefined
+  }
+  const number = Number(value)
+  if (!Number.isFinite(number) || number <= 0) {
+    throw createError(400, '价格必须大于 0', [{ field: 'price', code: 'invalid_range', message: 'price must be > 0' }])
+  }
+  return number
+}
+
+function normalizeCondition(value, { required = false } = {}) {
+  if (value === undefined || value === null || value === '') {
+    if (required) throw createError(400, '成色不能为空', [{ field: 'condition', code: 'required', message: 'condition is required' }])
+    return undefined
+  }
+  const number = Number(value)
+  if (!Number.isFinite(number) || number < 0 || number > 10) {
+    throw createError(400, '成色必须在 0-10 之间', [{ field: 'condition', code: 'invalid_range', message: 'condition must be 0..10' }])
+  }
+  return number
 }
 
 function isActiveOrderStatus(status) {
@@ -417,6 +588,102 @@ function assertAllowedOrderTransition(fromStatus, toStatus) {
   }
 }
 
+function validateRegisterPayload(username, studentNo, password) {
+  const actualName = String(username || '').trim()
+  const actualStudentNo = String(studentNo || '').trim()
+  const actualPassword = String(password || '').trim()
+
+  if (!actualName || !actualStudentNo || !actualPassword) {
+    throw createError(400, '姓名、学号和密码不能为空', [
+      { field: 'username', code: 'required', message: 'username is required' },
+      { field: 'studentNo', code: 'required', message: 'studentNo is required' },
+      { field: 'password', code: 'required', message: 'password is required' }
+    ])
+  }
+
+  if (actualName.length < 2) {
+    throw createError(400, '用户名长度至少为 2 位', [{ field: 'username', code: 'min_length', message: 'username must have at least 2 chars' }])
+  }
+  assertNoPlaceholder(actualName, 'username')
+
+  if (!/^\d{6,20}$/.test(actualStudentNo)) {
+    throw createError(400, '学号格式不合法', [{ field: 'studentNo', code: 'invalid_format', message: 'studentNo must be 6-20 digits' }])
+  }
+
+  if (actualPassword.length < 6) {
+    throw createError(400, '密码长度不能少于 6 位', [{ field: 'password', code: 'min_length', message: 'password must have at least 6 chars' }])
+  }
+
+  return {
+    actualName,
+    actualStudentNo,
+    actualPassword
+  }
+}
+
+function normalizeListingPayload(payload = {}, { partial = false, fallbackCampus = '\u5317\u6821\u533a' } = {}) {
+  const normalized = {}
+
+  const titleInput = payload.title
+  if (!partial || titleInput !== undefined) {
+    const title = String(titleInput || '').trim()
+    if (!title) throw createError(400, '商品标题不能为空', [{ field: 'title', code: 'required', message: 'title is required' }])
+    assertNoPlaceholder(title, 'title')
+    normalized.title = title
+  }
+
+  const descInput = payload.desc
+  if (!partial || descInput !== undefined) {
+    const desc = String(descInput || '').trim()
+    assertNoPlaceholder(desc, 'desc')
+    normalized.desc = desc
+  }
+
+  const priceInput = payload.price
+  if (!partial || priceInput !== undefined) {
+    normalized.price = normalizePrice(priceInput, { required: !partial })
+  }
+
+  const conditionInput = payload.condition
+  if (!partial || conditionInput !== undefined) {
+    normalized.condition = normalizeCondition(conditionInput, { required: !partial })
+  }
+
+  const categoryInput = payload.category !== undefined ? payload.category : (!partial ? '\u6570\u7801' : undefined)
+  if (categoryInput !== undefined) {
+    normalized.category = normalizeCategory(categoryInput)
+  }
+
+  const campusInput = payload.campus !== undefined ? payload.campus : (!partial ? fallbackCampus : undefined)
+  if (campusInput !== undefined) {
+    normalized.campus = normalizeCampus(campusInput)
+  }
+
+  const shippingInput = payload.shipping !== undefined ? payload.shipping : (!partial ? '\u5305\u90ae' : undefined)
+  if (shippingInput !== undefined) {
+    normalized.shipping = normalizeShipping(shippingInput)
+  }
+
+  const methodInput = payload.method !== undefined ? payload.method : (!partial ? '\u9762\u4ea4\u4f18\u5148' : undefined)
+  if (methodInput !== undefined) {
+    normalized.method = normalizeMethod(methodInput)
+  }
+
+  const tags = normalizeTags(payload.tags)
+  if (tags !== undefined) {
+    normalized.tags = tags
+  } else if (!partial) {
+    normalized.tags = []
+  }
+
+  const images = normalizeImages(payload.images, { required: !partial })
+  if (images !== undefined) {
+    normalized.images = images
+  }
+
+  return normalized
+}
+
 export class DomainService {
   constructor(repository) {
     this.repository = repository
@@ -427,15 +694,7 @@ export class DomainService {
   }
 
   async register(username, studentNo, password) {
-    const actualName = String(username || '').trim()
-    const actualStudentNo = String(studentNo || '').trim()
-    const actualPassword = String(password || '').trim()
-    if (!actualName || !actualStudentNo || !actualPassword) {
-      throw createError(400, '姓名、学号和密码不能为空')
-    }
-    if (actualPassword.length < 6) {
-      throw createError(400, '密码长度不能少于 6 位')
-    }
+    const { actualName, actualStudentNo, actualPassword } = validateRegisterPayload(username, studentNo, password)
 
     const authUser = await this.repository.registerAuthUser({
       username: actualName,
@@ -569,8 +828,9 @@ export class DomainService {
       const user = getUserById(state, userId)
       if (!user || user.role === 'admin') throw createError(404, 'user not found')
 
-      user.status = status
-      if (status === '禁用') {
+      const nextStatus = normalizeUserStatusStrict(status)
+      user.status = nextStatus
+      if (nextStatus === '禁用') {
         state.listings.forEach((listing) => {
           if (listing.sellerId === user.id && normalizeListingStatus(listing.status) === LISTING_STATUS.PUBLISHED) {
             listing.status = LISTING_STATUS.OFFLINE
@@ -670,31 +930,35 @@ export class DomainService {
       const seller = findUserByName(state, currentUserName)
       if (!seller) throw createError(401, '未登录')
 
+      const normalizedPayload = normalizeListingPayload(payload, {
+        partial: false,
+        fallbackCampus: String(seller.campus || '\u5317\u6821\u533a').trim() || '\u5317\u6821\u533a'
+      })
+
       const listingNumericId = nextListingId(state)
 
       const listing = {
         id: `L${listingNumericId}`,
         numericId: listingNumericId,
         sellerId: seller.id,
-        title: String(payload.title || '').trim(),
-        price: Number(payload.price) || 0,
-        campus: String(payload.campus || seller.campus || '北校区').trim() || '北校区',
-        condition: Number(payload.condition) || 9,
-        category: String(payload.category || '数码').trim() || '数码',
+        title: normalizedPayload.title,
+        price: normalizedPayload.price,
+        campus: normalizedPayload.campus,
+        condition: normalizedPayload.condition,
+        category: normalizedPayload.category,
         createdAt: getToday(),
         updatedAt: getToday(),
-        desc: String(payload.desc || '').trim(),
-        tags: ensureArray(payload.tags),
-        shipping: String(payload.shipping || '包邮').trim() || '包邮',
-        method: String(payload.method || '面交优先').trim() || '面交优先',
+        desc: normalizedPayload.desc,
+        tags: normalizedPayload.tags,
+        shipping: normalizedPayload.shipping,
+        method: normalizedPayload.method,
         views: 0,
         likes: 0,
         status: LISTING_STATUS.PENDING,
-        images: ensureArray(payload.images),
+        images: normalizedPayload.images,
         reviewRemark: null
       }
 
-      if (!listing.title) throw createError(400, '商品标题不能为空')
       state.listings.unshift(listing)
       createNotification(state, seller.id, {
         type: 'system',
@@ -716,18 +980,8 @@ export class DomainService {
         throw createError(403, '无权限编辑该商品')
       }
 
-      const nextTags = ensureArray(payload.tags)
-      Object.assign(listing, {
-        title: payload.title ?? listing.title,
-        price: payload.price !== undefined ? Number(payload.price) || 0 : listing.price,
-        condition: payload.condition !== undefined ? Number(payload.condition) || listing.condition : listing.condition,
-        desc: payload.desc ?? listing.desc,
-        images: payload.images ? ensureArray(payload.images) : listing.images,
-        tags: nextTags.length ? nextTags : listing.tags,
-        shipping: payload.shipping ?? listing.shipping,
-        method: payload.method ?? listing.method,
-        updatedAt: getToday()
-      })
+      const normalizedPayload = normalizeListingPayload(payload, { partial: true })
+      Object.assign(listing, normalizedPayload, { updatedAt: getToday() })
       return buildListingDto(state, listing)
     })
   }
@@ -740,7 +994,13 @@ export class DomainService {
       if (!user || (listing.sellerId !== user.id && user.role !== 'admin')) {
         throw createError(403, '无权限修改该商品状态')
       }
-      listing.status = normalizeListingStatus(status || listing.status)
+      if (status !== undefined && status !== null && String(status).trim() !== '') {
+        const nextStatus = normalizeListingStatusStrict(status)
+        if (![LISTING_STATUS.PENDING, LISTING_STATUS.PUBLISHED, LISTING_STATUS.OFFLINE].includes(nextStatus)) {
+          throw createError(400, '当前接口仅支持 待审核 / 上架 / 下架', [{ field: 'status', code: 'invalid_enum', message: 'status must be PENDING, PUBLISHED or OFFLINE' }])
+        }
+        listing.status = nextStatus
+      }
       listing.updatedAt = getToday()
       return buildListingDto(state, listing)
     })
@@ -754,7 +1014,10 @@ export class DomainService {
       const listing = getListingById(state, listingId)
       if (!listing) throw createError(404, 'listing not found')
 
-      const nextStatus = normalizeListingStatus(status)
+      const nextStatus = normalizeListingStatusStrict(status)
+      if (![LISTING_STATUS.PUBLISHED, LISTING_STATUS.REJECTED].includes(nextStatus)) {
+        throw createError(400, '审核状态仅支持 上架 / 驳回', [{ field: 'status', code: 'invalid_enum', message: 'review status must be PUBLISHED or REJECTED' }])
+      }
       listing.status = nextStatus
       listing.reviewRemark = reason || null
       listing.updatedAt = getToday()

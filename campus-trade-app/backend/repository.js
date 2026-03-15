@@ -37,14 +37,28 @@ function findStateUserByStudentNo(state, studentNo) {
   return state.users.find((user) => user.studentNo === keyword) || null
 }
 
+function findStateUserByName(state, username) {
+  const keyword = String(username || '').trim()
+  if (!keyword) return null
+  return state.users.find((user) => String(user.name || '').trim() === keyword) || null
+}
+
 function registerStateUser(state, { username, studentNo, password }) {
   const actualName = String(username || '').trim()
   const actualStudentNo = String(studentNo || '').trim()
   const actualPassword = String(password || '').trim()
 
-  if (state.users.some((user) => user.studentNo === actualStudentNo)) {
+  if (findStateUserByStudentNo(state, actualStudentNo)) {
     const error = new Error('学号已注册')
     error.status = 409
+    error.details = [{ field: 'studentNo', code: 'duplicate', message: 'studentNo already exists' }]
+    throw error
+  }
+
+  if (findStateUserByName(state, actualName)) {
+    const error = new Error('用户名已存在')
+    error.status = 409
+    error.details = [{ field: 'username', code: 'duplicate', message: 'username already exists' }]
     throw error
   }
 

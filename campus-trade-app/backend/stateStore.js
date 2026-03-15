@@ -491,6 +491,57 @@ export class MysqlStateStore {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
     `)
 
+    await this.normalizeDataForConstraints()
+    await this.ensureColumnNotNull('ct_user', 'user_code', 'ALTER TABLE ct_user MODIFY COLUMN user_code VARCHAR(32) NOT NULL')
+
+    await this.ensureUniqueIndex('ct_user', 'uk_user_code', ['user_code'])
+    await this.ensureIndex('ct_user', 'idx_user_status', ['user_status'])
+    await this.ensureIndex('ct_user', 'idx_user_role', ['role_type'])
+    await this.ensureIndex('ct_user', 'idx_user_campus_status', ['campus_id', 'user_status'])
+
+    await this.ensureIndex('ct_listing', 'idx_listing_status_created', ['listing_status', 'created_at'])
+    await this.ensureIndex('ct_listing', 'idx_listing_seller_status', ['seller_id', 'listing_status'])
+    await this.ensureIndex('ct_listing', 'idx_listing_category_status', ['category_id', 'listing_status'])
+    await this.ensureIndex('ct_listing', 'idx_listing_campus_status', ['campus_id', 'listing_status'])
+    await this.ensureIndex('ct_listing', 'idx_listing_price', ['price'])
+
+    await this.ensureIndex('ct_order', 'idx_order_buyer_status', ['buyer_id', 'order_status'])
+    await this.ensureIndex('ct_order', 'idx_order_seller_status', ['seller_id', 'order_status'])
+    await this.ensureIndex('ct_order', 'idx_order_created', ['created_at'])
+    await this.ensureIndex('ct_order', 'idx_order_listing', ['listing_id'])
+
+    await this.ensureIndex('ct_order_status_log', 'idx_order_log_order', ['order_id', 'created_at'])
+    await this.ensureIndex('ct_order_status_log', 'idx_order_log_operator', ['operator_id'])
+
+    await this.ensureIndex('ct_conversation', 'idx_conversation_buyer', ['buyer_id', 'updated_at'])
+    await this.ensureIndex('ct_conversation', 'idx_conversation_seller', ['seller_id', 'updated_at'])
+
+    await this.ensureIndex('ct_message', 'idx_message_conversation_time', ['conversation_id', 'sent_at'])
+    await this.ensureIndex('ct_message', 'idx_message_sender', ['sender_id'])
+    await this.ensureIndex('ct_message', 'idx_message_read', ['read_status'])
+
+    await this.ensureIndex('ct_user_verify', 'idx_verify_user_status', ['user_id', 'verify_status'])
+    await this.ensureIndex('ct_user_verify', 'idx_verify_created', ['created_at'])
+    await this.ensureIndex('ct_listing_review', 'idx_listing_review_listing', ['listing_id'])
+    await this.ensureIndex('ct_listing_review', 'idx_listing_review_created', ['created_at'])
+    await this.ensureIndex('ct_favorite', 'idx_favorite_listing', ['listing_id'])
+    await this.ensureIndex('ct_notification', 'idx_notification_user_read', ['user_id', 'read_status', 'created_at'])
+    await this.ensureIndex('ct_notification', 'idx_notification_order', ['related_order_no'])
+
+    await this.ensureCheckConstraint('ct_user', 'ck_user_role_type', 'role_type IN (1, 2)')
+    await this.ensureCheckConstraint('ct_user', 'ck_user_status', 'user_status IN (1, 2)')
+    await this.ensureCheckConstraint('ct_user', 'ck_user_verified_status', 'verified_status IN (0, 1)')
+    await this.ensureCheckConstraint('ct_user', 'ck_user_credit_score', 'credit_score >= 0 AND credit_score <= 5')
+    await this.ensureCheckConstraint('ct_listing', 'ck_listing_price', 'price >= 0')
+    await this.ensureCheckConstraint('ct_listing', 'ck_listing_quality_score', 'quality_score >= 0 AND quality_score <= 10')
+    await this.ensureCheckConstraint('ct_listing', 'ck_listing_shipping_type', 'shipping_type IN (1, 2, 3)')
+    await this.ensureCheckConstraint('ct_listing', 'ck_listing_trade_method', 'trade_method IN (1, 2, 3)')
+    await this.ensureCheckConstraint('ct_listing', 'ck_listing_status', 'listing_status IN (0, 1, 2, 3, 4, 5)')
+    await this.ensureCheckConstraint('ct_order', 'ck_order_amount', 'order_amount >= 0')
+    await this.ensureCheckConstraint('ct_order', 'ck_order_status', 'order_status IN (0, 1, 2, 3, 4, 5)')
+    await this.ensureCheckConstraint('ct_order', 'ck_order_trade_method', 'trade_method IN (1, 2, 3)')
+    await this.ensureCheckConstraint('ct_order', 'ck_order_payment_status', 'payment_status IN (0, 1, 2)')
+
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS app_state (
         id TINYINT PRIMARY KEY,
@@ -539,6 +590,156 @@ export class MysqlStateStore {
     if (currentType !== String(expectedType || '').toLowerCase()) {
       await this.pool.query(alterStatement)
     }
+  }
+
+  async ensureColumnNotNull(tableName, columnName, alterStatement) {
+    const rows = await queryRows(
+      this.pool,
+      `
+      SELECT is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = ?
+        AND table_name = ?
+        AND column_name = ?
+      LIMIT 1
+      `,
+      [this.databaseName, tableName, columnName]
+    )
+    if (!rows.length) return
+    if (String(rows[0].is_nullable || '').toUpperCase() === 'YES') {
+      await this.pool.query(alterStatement)
+    }
+  }
+
+  async ensureIndex(tableName, indexName, columns) {
+    const rows = await queryRows(
+      this.pool,
+      `
+      SELECT 1
+      FROM information_schema.statistics
+      WHERE table_schema = ?
+        AND table_name = ?
+        AND index_name = ?
+      LIMIT 1
+      `,
+      [this.databaseName, tableName, indexName]
+    )
+
+    if (rows.length) return
+    await this.pool.query(`CREATE INDEX \`${escapeIdentifier(indexName)}\` ON \`${escapeIdentifier(tableName)}\` (${columns.map((column) => `\`${escapeIdentifier(column)}\``).join(', ')})`)
+  }
+
+  async ensureUniqueIndex(tableName, indexName, columns) {
+    const rows = await queryRows(
+      this.pool,
+      `
+      SELECT non_unique
+      FROM information_schema.statistics
+      WHERE table_schema = ?
+        AND table_name = ?
+        AND index_name = ?
+      LIMIT 1
+      `,
+      [this.databaseName, tableName, indexName]
+    )
+
+    if (rows.length && Number(rows[0].non_unique) === 0) return
+    if (rows.length) {
+      await this.pool.query(`DROP INDEX \`${escapeIdentifier(indexName)}\` ON \`${escapeIdentifier(tableName)}\``)
+    }
+    await this.pool.query(`CREATE UNIQUE INDEX \`${escapeIdentifier(indexName)}\` ON \`${escapeIdentifier(tableName)}\` (${columns.map((column) => `\`${escapeIdentifier(column)}\``).join(', ')})`)
+  }
+
+  async ensureCheckConstraint(tableName, constraintName, expression) {
+    const rows = await queryRows(
+      this.pool,
+      `
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = ?
+        AND table_name = ?
+        AND constraint_name = ?
+        AND constraint_type = 'CHECK'
+      LIMIT 1
+      `,
+      [this.databaseName, tableName, constraintName]
+    )
+    if (rows.length) return
+
+    try {
+      await this.pool.query(`
+        ALTER TABLE \`${escapeIdentifier(tableName)}\`
+        ADD CONSTRAINT \`${escapeIdentifier(constraintName)}\`
+        CHECK (${expression})
+      `)
+    } catch (error) {
+      if (!String(error?.message || '').includes('Duplicate')) throw error
+    }
+  }
+
+  async normalizeDataForConstraints() {
+    await this.pool.query(`
+      UPDATE ct_user
+      SET user_code = CASE
+        WHEN role_type = 2 THEN CONCAT('A', LPAD(user_id, 2, '0'))
+        ELSE CONCAT('U', LPAD(user_id, 2, '0'))
+      END
+      WHERE user_code IS NULL OR user_code = ''
+    `)
+    await this.pool.query(`
+      UPDATE ct_user
+      SET user_code = CASE
+        WHEN role_type = 2 THEN CONCAT('A', LPAD(user_id, 2, '0'))
+        ELSE CONCAT('U', LPAD(user_id, 2, '0'))
+      END
+      WHERE user_code REGEXP '^(U|A)?[0-9]+$' = 0
+    `)
+    await this.pool.query(`
+      UPDATE ct_user u
+      INNER JOIN (
+        SELECT user_code
+        FROM ct_user
+        WHERE user_code IS NOT NULL AND user_code <> ''
+        GROUP BY user_code
+        HAVING COUNT(*) > 1
+      ) d ON d.user_code = u.user_code
+      SET u.user_code = CASE
+        WHEN u.role_type = 2 THEN CONCAT('A', LPAD(u.user_id, 2, '0'))
+        ELSE CONCAT('U', LPAD(u.user_id, 2, '0'))
+      END
+    `)
+    await this.pool.query(`
+      UPDATE ct_user
+      SET role_type = CASE WHEN role_type IN (1, 2) THEN role_type ELSE 1 END,
+          user_status = CASE WHEN user_status IN (1, 2) THEN user_status ELSE 1 END,
+          verified_status = CASE WHEN verified_status IN (0, 1) THEN verified_status ELSE 0 END,
+          credit_score = CASE
+            WHEN credit_score < 0 THEN 0
+            WHEN credit_score > 5 THEN 5
+            ELSE credit_score
+          END
+    `)
+
+    await this.pool.query(`
+      UPDATE ct_listing
+      SET price = CASE WHEN price < 0 THEN 0 ELSE price END,
+          quality_score = CASE
+            WHEN quality_score < 0 THEN 0
+            WHEN quality_score > 10 THEN 10
+            ELSE quality_score
+          END,
+          shipping_type = CASE WHEN shipping_type IN (1, 2, 3) THEN shipping_type ELSE 2 END,
+          trade_method = CASE WHEN trade_method IN (1, 2, 3) THEN trade_method ELSE 1 END,
+          listing_status = CASE WHEN listing_status IN (0, 1, 2, 3, 4, 5) THEN listing_status ELSE 1 END
+    `)
+
+    await this.pool.query(`
+      UPDATE ct_order
+      SET order_amount = CASE WHEN order_amount < 0 THEN 0 ELSE order_amount END,
+          order_status = CASE WHEN order_status IN (0, 1, 2, 3, 4, 5) THEN order_status ELSE 0 END,
+          trade_method = CASE WHEN trade_method IN (1, 2, 3) THEN trade_method ELSE 1 END,
+          payment_status = CASE WHEN payment_status IN (0, 1, 2) THEN payment_status ELSE 0 END
+    `)
   }
 
   async seedCampuses(executor = this.pool) {
@@ -623,6 +824,27 @@ export class MysqlStateStore {
     return buildAuthUser(rows[0])
   }
 
+  async findAuthUserByUsername(username) {
+    const keyword = String(username || '').trim()
+    if (!keyword) return null
+    const rows = await queryRows(
+      this.pool,
+      `
+      SELECT
+        u.user_id, u.user_code, u.student_no, u.username, u.password_hash,
+        u.role_type, u.user_status, u.verified_status, u.credit_score, u.reg_at,
+        c.campus_name
+      FROM ct_user u
+      LEFT JOIN ct_campus c ON c.campus_id = u.campus_id
+      WHERE u.username = ?
+      LIMIT 1
+      `,
+      [keyword]
+    )
+    if (!rows.length) return null
+    return buildAuthUser(rows[0])
+  }
+
   async registerAuthUser({ username, studentNo, password }) {
     const actualStudentNo = String(studentNo || '').trim()
     const actualName = String(username || '').trim()
@@ -631,6 +853,15 @@ export class MysqlStateStore {
     if (existing) {
       const error = new Error('学号已注册')
       error.status = 409
+      error.details = [{ field: 'studentNo', code: 'duplicate', message: 'studentNo already exists' }]
+      throw error
+    }
+
+    const existingByUsername = await this.findAuthUserByUsername(actualName)
+    if (existingByUsername) {
+      const error = new Error('用户名已存在')
+      error.status = 409
+      error.details = [{ field: 'username', code: 'duplicate', message: 'username already exists' }]
       throw error
     }
 

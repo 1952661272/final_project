@@ -5,8 +5,10 @@ function ok(res, data = {}) {
   res.json({ ok: true, data })
 }
 
-function fail(res, status, message) {
-  res.status(status).json({ ok: false, message })
+function fail(res, status, message, details = null) {
+  const payload = { ok: false, message }
+  if (details) payload.details = details
+  res.status(status).json(payload)
 }
 
 function currentUserName(req) {
@@ -34,7 +36,7 @@ function asyncHandler(handler) {
     try {
       await handler(req, res)
     } catch (error) {
-      fail(res, error.status || 500, error.message || 'internal server error')
+      fail(res, error.status || 500, error.message || 'internal server error', error.details || null)
     }
   }
 }

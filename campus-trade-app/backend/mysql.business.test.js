@@ -138,6 +138,13 @@ describe('mysql business integration', () => {
         expect(orderRows[0].payment_method).toBe('wechat_pay')
         expect(logRows[0].count).toBeGreaterThanOrEqual(3)
         expect(notificationRows[0].count).toBeGreaterThanOrEqual(3)
+
+        await expect(
+          connection.query("UPDATE ct_listing SET listing_status = 9 WHERE title = 'mysql_flow_listing'")
+        ).rejects.toThrow()
+        await expect(
+          connection.query('UPDATE ct_order SET payment_status = 9 WHERE order_no = ?', [ordered.body.data.id])
+        ).rejects.toThrow()
       } finally {
         await connection.end()
       }

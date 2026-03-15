@@ -390,6 +390,75 @@ describe('campus trade api', () => {
     expect(markRead.body.data.read).toBe(true)
   })
 
+  it('rejects invalid register and listing payload with structured field details', async () => {
+    const app = buildApp()
+
+    const invalidRegister = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ username: 'abc???', studentNo: '12ab', password: '123' })
+
+    expect(invalidRegister.status).toBe(400)
+    expect(Array.isArray(invalidRegister.body.details)).toBe(true)
+    expect(invalidRegister.body.details.length).toBeGreaterThan(0)
+
+    const invalidListing = await request(app)
+      .post('/api/v1/listings')
+      .set('x-user-name', encoded('202301'))
+      .send({
+        title: 'test listing',
+        price: 1,
+        category: 'unknown-category',
+        campus: '北校区',
+        condition: 9,
+        desc: 'desc',
+        shipping: '包邮',
+        method: '面交优先',
+        images: ['/assets/t.jpg']
+      })
+
+    expect(invalidListing.status).toBe(400)
+    expect(Array.isArray(invalidListing.body.details)).toBe(true)
+    expect(invalidListing.body.details.some((item) => item.field === 'category')).toBe(true)
+  })
+
+  it('rejects invalid listing status transitions for review and manual status update', async () => {
+    const app = buildApp()
+    const adminHeaders = { 'x-admin-account': encoded('admin') }
+
+    const created = await request(app)
+      .post('/api/v1/listings')
+      .set('x-user-name', encoded('202301'))
+      .send({
+        title: 'status check item',
+        price: 88,
+        category: '数码',
+        campus: '北校区',
+        condition: 9,
+        desc: 'status validation',
+        shipping: '包邮',
+        method: '面交优先',
+        images: ['/assets/status.jpg']
+      })
+
+    expect(created.status).toBe(200)
+
+    const invalidReview = await request(app)
+      .post(`/api/v1/admin/listings/${created.body.data.id}/review`)
+      .set(adminHeaders)
+      .send({ status: '交易中' })
+
+    expect(invalidReview.status).toBe(400)
+    expect(Array.isArray(invalidReview.body.details)).toBe(true)
+
+    const invalidManualStatus = await request(app)
+      .patch(`/api/v1/listings/${created.body.data.id}/status`)
+      .set('x-user-name', encoded('202301'))
+      .send({ status: '已售' })
+
+    expect(invalidManualStatus.status).toBe(400)
+    expect(Array.isArray(invalidManualStatus.body.details)).toBe(true)
+  })
+
   it('allows admin to force offline a violating listing and notifies the seller', async () => {
     const app = buildApp()
     const adminHeaders = { 'x-admin-account': encoded('admin') }

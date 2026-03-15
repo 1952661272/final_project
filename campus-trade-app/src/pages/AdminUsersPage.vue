@@ -102,15 +102,11 @@ const verifiedOptions = [
 const userRows = computed(() => {
   const source = store.state.adminUsers.length ? store.state.adminUsers : store.state.users
   return source
-    .map((user) => {
-      const listings = store.state.items.filter((item) => item.seller === user.name)
-      const activeListings = listings.filter((item) => item.status === '上架').length
-      return {
-        ...user,
-        listings: listings.length,
-        activeListings
-      }
-    })
+    .map((user) => ({
+      ...user,
+      totalPublished: Number(user.totalPublished ?? user.listings ?? 0),
+      onSale: Number(user.onSale ?? user.activeListings ?? 0)
+    }))
     .sort((a, b) => String(b.reg || '').localeCompare(String(a.reg || '')))
 })
 
@@ -121,8 +117,8 @@ const userColumns = [
   { name: 'status', label: '状态', field: 'status', align: 'center' },
   { name: 'verified', label: '认证', field: 'verified', align: 'center' },
   { name: 'credit', label: '信用分', field: 'credit', align: 'center' },
-  { name: 'listings', label: '累计发布', field: 'listings', align: 'center' },
-  { name: 'activeListings', label: '在售', field: 'activeListings', align: 'center' },
+  { name: 'totalPublished', label: '累计发布', field: 'totalPublished', align: 'center' },
+  { name: 'onSale', label: '在售', field: 'onSale', align: 'center' },
   { name: 'reg', label: '注册时间', field: 'reg', align: 'center' },
   { name: 'action', label: '操作', field: 'action', align: 'right' }
 ]
