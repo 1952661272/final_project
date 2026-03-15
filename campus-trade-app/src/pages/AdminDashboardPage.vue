@@ -2,111 +2,158 @@
   <q-page class="page">
     <div class="section">
       <div class="section-title">数据看板</div>
+
+      <div class="filter-bar">
+        <q-input v-model="filters.dateFrom" outlined dense type="date" label="开始日期" class="filter-item" />
+        <q-input v-model="filters.dateTo" outlined dense type="date" label="结束日期" class="filter-item" />
+        <q-btn unelevated class="btn-primary" label="筛选" @click="applyFilters" />
+        <q-btn flat class="btn-ghost" label="重置" @click="resetFilters" />
+      </div>
+
       <div class="stat-grid">
         <div class="stat">
-          <div class="stat-value">{{ activeUsers }}</div>
-          <div class="stat-label">活跃用户</div>
+          <div class="stat-value">{{ overview.totalUsers }}</div>
+          <div class="stat-label">用户总数</div>
         </div>
         <div class="stat">
-          <div class="stat-value">{{ newItems }}</div>
-          <div class="stat-label">近7日新增商品</div>
+          <div class="stat-value">{{ overview.newItems }}</div>
+          <div class="stat-label">近 7 日新增商品</div>
         </div>
         <div class="stat">
-          <div class="stat-value">{{ completedOrders }}</div>
+          <div class="stat-value">{{ overview.completedOrders }}</div>
           <div class="stat-label">成交订单</div>
         </div>
       </div>
 
       <div class="stat-grid stat-grid-secondary">
         <div class="stat stat-secondary">
-          <div class="stat-value">{{ pendingReview }}</div>
+          <div class="stat-value">{{ overview.pendingReview }}</div>
           <div class="stat-label">待审核商品</div>
         </div>
         <div class="stat stat-secondary">
-          <div class="stat-value">{{ todayItems }}</div>
+          <div class="stat-value">{{ overview.todayItems }}</div>
           <div class="stat-label">今日发布</div>
         </div>
         <div class="stat stat-secondary">
-          <div class="stat-value">¥ {{ totalGMV }}</div>
+          <div class="stat-value">¥ {{ formattedGMV }}</div>
           <div class="stat-label">累计成交额</div>
         </div>
       </div>
 
-      <trend-chart :series="trendSeries" />
+      <div class="status-grid">
+        <div class="status-card">
+          <div class="status-label">待确认</div>
+          <div class="status-value">{{ groups.pending }}</div>
+        </div>
+        <div class="status-card">
+          <div class="status-label">已确认</div>
+          <div class="status-value">{{ groups.confirmed }}</div>
+        </div>
+        <div class="status-card">
+          <div class="status-label">进行中</div>
+          <div class="status-value">{{ groups.inProgress }}</div>
+        </div>
+        <div class="status-card">
+          <div class="status-label">已完成</div>
+          <div class="status-value">{{ groups.completed }}</div>
+        </div>
+        <div class="status-card">
+          <div class="status-label">已取消</div>
+          <div class="status-value">{{ groups.cancelled }}</div>
+        </div>
+        <div class="status-card">
+          <div class="status-label">已拒绝</div>
+          <div class="status-value">{{ groups.rejected }}</div>
+        </div>
+      </div>
+
+      <trend-chart :series="overview.trendSeries || []" />
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
+import { Notify } from 'quasar'
 import TrendChart from 'src/components/TrendChart.vue'
 import { store } from 'src/data/store'
 
-function formatDate (date) {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-  return local.toISOString().slice(0, 10)
-}
+const filters = reactive({
+  dateFrom: store.state.adminDashboardFilters.dateFrom || '',
+  dateTo: store.state.adminDashboardFilters.dateTo || ''
+})
 
-function formatLabel (date) {
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${month}/${day}`
-}
+const overview = computed(() => store.state.adminOverview || {
+  totalUsers: 0,
+  newItems: 0,
+  completedOrders: 0,
+  pendingReview: 0,
+  todayItems: 0,
+  totalGMV: 0,
+  trendSeries: [],
+  orderStatusGroups: {}
+})
 
-function getLastDays (count) {
-  const days = []
-  for (let i = count - 1; i >= 0; i -= 1) {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    days.push(date)
+const groups = computed(() => ({
+  pending: overview.value.orderStatusGroups?.pending || 0,
+  confirmed: overview.value.orderStatusGroups?.confirmed || 0,
+  inProgress: overview.value.orderStatusGroups?.inProgress || 0,
+  completed: overview.value.orderStatusGroups?.completed || 0,
+  cancelled: overview.value.orderStatusGroups?.cancelled || 0,
+  rejected: overview.value.orderStatusGroups?.rejected || 0
+}))
+
+const formattedGMV = computed(() => Number(overview.value.totalGMV || 0).toLocaleString())
+
+async function applyFilters() {
+  try {
+    await store.setAdminDashboardFilters({ ...filters })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '筛选失败' })
   }
-  return days
 }
 
-const todayKey = formatDate(new Date())
-
-const activeUsers = computed(() => store.state.users.filter((user) => user.status === '正常').length)
-
-const newItems = computed(() => store.state.items.filter((item) => {
-  if (!item.createdAt) return false
-  const created = new Date(`${item.createdAt}T00:00:00`)
-  const diffDays = (new Date() - created) / (1000 * 60 * 60 * 24)
-  return diffDays >= 0 && diffDays < 7
-}).length)
-
-const completedOrders = computed(() => store.state.orders.filter((order) => order.status === '已完成').length)
-
-const pendingReview = computed(() => store.state.items.filter((item) => item.status === '待审核').length)
-
-const todayItems = computed(() => store.state.items.filter((item) => item.createdAt === todayKey).length)
-
-const totalGMV = computed(() => {
-  const sum = store.state.orders
-    .filter((order) => order.status === '已完成')
-    .reduce((total, order) => total + (order.price || 0), 0)
-  return sum.toLocaleString()
-})
-
-const trendSeries = computed(() => {
-  const days = getLastDays(7)
-  const itemsByDate = store.state.items.reduce((acc, item) => {
-    if (!item.createdAt) return acc
-    acc[item.createdAt] = (acc[item.createdAt] || 0) + 1
-    return acc
-  }, {})
-  const ordersByDate = store.state.orders.reduce((acc, order) => {
-    if (!order.createdAt) return acc
-    acc[order.createdAt] = (acc[order.createdAt] || 0) + 1
-    return acc
-  }, {})
-
-  return days.map((date) => {
-    const key = formatDate(date)
-    return {
-      label: formatLabel(date),
-      items: itemsByDate[key] || 0,
-      orders: ordersByDate[key] || 0
-    }
-  })
-})
+async function resetFilters() {
+  filters.dateFrom = ''
+  filters.dateTo = ''
+  await applyFilters()
+}
 </script>
+
+<style scoped>
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.filter-item {
+  min-width: 180px;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.status-card {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.status-label {
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.status-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+</style>

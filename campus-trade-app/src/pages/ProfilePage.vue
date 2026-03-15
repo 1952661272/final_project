@@ -56,16 +56,25 @@
                 <div class="order-meta">订单号 {{ order.id }} · {{ order.status }}</div>
                 <div class="order-meta">{{ order.method }} · {{ order.address }}</div>
                 <div class="order-meta">卖家 {{ order.seller || '-' }} · {{ order.time }}</div>
+                <div class="order-meta">支付 {{ order.paymentStatus || '未支付' }} · {{ order.paymentMethod || '待选择方式' }}</div>
               </div>
               <div class="order-actions">
                 <div class="order-price">¥ {{ order.price }}</div>
                 <q-btn
                   v-if="order.status === '待确认'"
+                  flat
+                  class="btn-ghost"
+                  label="等待卖家确认"
+                  disable
+                  size="sm"
+                />
+                <q-btn
+                  v-if="order.status === '已确认'"
                   unelevated
                   class="btn-primary"
                   label="付款"
                   size="sm"
-                  @click="updateBuyStatus(order.id, '进行中')"
+                  @click="goToOrderDetail(order, 'buy', 'pay')"
                 />
                 <q-btn
                   v-if="order.status === '待确认'"
@@ -96,7 +105,7 @@
                   class="btn-ghost"
                   label="详情"
                   size="sm"
-                  @click="openOrderDetail(order, 'buy')"
+                  @click="goToOrderDetail(order, 'buy')"
                 />
               </div>
             </q-card>
@@ -150,7 +159,7 @@
                   class="btn-ghost"
                   label="详情"
                   size="sm"
-                  @click="openOrderDetail(order, 'sell')"
+                  @click="goToOrderDetail(order, 'sell')"
                 />
               </div>
             </q-card>
@@ -253,6 +262,36 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="showPaymentDialog">
+      <q-card class="picker-card">
+        <div class="card-title">订单付款</div>
+        <div class="detail-list">
+          <div><strong>商品：</strong>{{ paymentOrder.item || '-' }}</div>
+          <div><strong>订单号：</strong>{{ paymentOrder.id || '-' }}</div>
+          <div><strong>应付金额：</strong>¥ {{ paymentOrder.price || 0 }}</div>
+        </div>
+        <q-option-group
+          v-model="paymentMethod"
+          type="radio"
+          color="primary"
+          :options="paymentOptions"
+          class="q-mt-md"
+        />
+        <div v-if="orderDetail.rejectReason || orderDetail.cancelReason || orderLogs.length" class="detail-list q-mt-md">
+          <div v-if="orderDetail.rejectReason"><strong>拒绝原因：</strong>{{ orderDetail.rejectReason }}</div>
+          <div v-if="orderDetail.cancelReason"><strong>取消原因：</strong>{{ orderDetail.cancelReason }}</div>
+          <div v-if="orderLogs.length" class="text-weight-bold">订单日志</div>
+          <div v-for="log in orderLogs" :key="log.id">
+            {{ log.createdAt }} · {{ log.operator }} · {{ log.toStatus }}<span v-if="log.note"> · {{ log.note }}</span>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <q-btn flat class="btn-ghost" label="取消" v-close-popup />
+          <q-btn unelevated class="btn-primary" label="确认付款" @click="confirmPayment" />
+        </div>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="showOrderDetail">
       <q-card class="picker-card">
         <div class="card-title">订单详情</div>
@@ -269,6 +308,8 @@
           <div><strong>状态：</strong>{{ orderDetail.status }}</div>
           <div><strong>交易方式：</strong>{{ orderDetail.method || '-' }}</div>
           <div><strong>交易地点：</strong>{{ orderDetail.address || '-' }}</div>
+          <div><strong>支付状态：</strong>{{ orderDetail.paymentStatus || '未支付' }}</div>
+          <div><strong>付款方式：</strong>{{ orderDetail.paymentMethod || '-' }}</div>
           <div><strong>时间：</strong>{{ orderDetail.time || '-' }}</div>
           <div v-if="orderDetail.seller"><strong>卖家：</strong>{{ orderDetail.seller }}</div>
           <div v-if="orderDetail.buyer"><strong>买家：</strong>{{ orderDetail.buyer }}</div>
@@ -304,10 +345,13 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { Notify } from 'quasar'
+import { useRoute, useRouter } from 'vue-router'
+import { Dialog, Notify } from 'quasar'
 import { store } from 'src/data/store'
 
-const tab = ref('buy')
+const route = useRoute()
+const router = useRouter()
+const tab = ref(route.query.tab === 'sell' ? 'sell' : route.query.tab === 'listing' ? 'listing' : 'buy')
 
 const currentUserInfo = computed(() => store.state.users.find((user) => user.name === store.state.user.name))
 const myListings = computed(() => store.state.items.filter((item) => item.seller === store.state.user.name))
@@ -316,14 +360,24 @@ const favoriteItems = computed(() => store.state.items.filter((item) => store.st
 
 const showFavorites = ref(false)
 const showEdit = ref(false)
+const showPaymentDialog = ref(false)
 const showOrderDetail = ref(false)
 const showListingDetail = ref(false)
 const editUpload = ref([])
 const editForm = ref({ id: null, title: '', price: '', condition: '', desc: '' })
 const editImages = ref([])
+const paymentOrder = ref({})
+const paymentMethod = ref('微信支付')
 const orderDetail = ref({})
+const orderLogs = ref([])
 const listingDetail = ref({})
 const orderItemInfo = computed(() => store.state.items.find((item) => item.title === orderDetail.value.item))
+const paymentOptions = [
+  { label: '微信支付', value: '微信支付' },
+  { label: '支付宝', value: '支付宝' },
+  { label: '银行卡', value: '银行卡' },
+  { label: '当面付款', value: '当面付款' }
+]
 
 function getItemImages (title) {
   const item = store.state.items.find((candidate) => candidate.title === title)
@@ -359,21 +413,80 @@ function resizeImage (file) {
 }
 
 async function updateBuyStatus (id, status) {
+  const reason = await requestReasonIfNeeded(status)
+  if (status === '已取消' && !reason) return
   try {
-    await store.updateOrderStatus(id, status)
+    if (reason) {
+      await store.updateOrderStatusWithReason(id, status, reason)
+    } else {
+      await store.updateOrderStatus(id, status)
+    }
     Notify.create({ type: 'positive', message: `订单状态已更新为 ${status}` })
   } catch (error) {
     Notify.create({ type: 'negative', message: error.message || '订单状态更新失败' })
   }
 }
 
-async function updateSellStatus (id, status) {
+function openPaymentDialog (order) {
+  paymentOrder.value = { ...order }
+  paymentMethod.value = '微信支付'
+  showPaymentDialog.value = true
+}
+
+async function confirmPayment () {
+  if (!paymentOrder.value?.id) return
   try {
-    await store.updateSellerOrderStatus(id, status)
+    const paidOrder = await store.payOrder(paymentOrder.value.id, paymentMethod.value)
+    paymentOrder.value = { ...paidOrder }
+    orderDetail.value = { ...paidOrder }
+    showPaymentDialog.value = false
+    Notify.create({ type: 'positive', message: `付款成功，已使用${paymentMethod.value}` })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '付款失败' })
+  }
+}
+
+function goToOrderDetail (order, role = 'buy', action = '') {
+  router.push({
+    name: 'order-detail',
+    params: { id: order.id },
+    query: action ? { role, action } : { role }
+  })
+}
+
+async function updateSellStatus (id, status) {
+  const reason = await requestReasonIfNeeded(status)
+  if (status === '已拒绝' && !reason) return
+  try {
+    if (reason) {
+      await store.updateOrderStatusWithReason(id, status, reason)
+    } else {
+      await store.updateSellerOrderStatus(id, status)
+    }
     Notify.create({ type: 'positive', message: `订单状态已更新为 ${status}` })
   } catch (error) {
     Notify.create({ type: 'negative', message: error.message || '订单状态更新失败' })
   }
+}
+
+function requestReasonIfNeeded (status) {
+  const needReason = ['已拒绝', '已取消'].includes(status)
+  if (!needReason) return Promise.resolve('')
+  const title = status === '已拒绝' ? '请输入拒绝原因' : '请输入取消原因'
+  return new Promise((resolve) => {
+    Dialog.create({
+      title,
+      prompt: {
+        model: '',
+        type: 'text',
+        isValid: (value) => String(value || '').trim().length > 0
+      },
+      cancel: true,
+      persistent: true
+    }).onOk((value) => resolve(String(value || '').trim()))
+      .onCancel(() => resolve(''))
+      .onDismiss(() => resolve(''))
+  })
 }
 
 function openEdit (item) {
@@ -464,8 +577,15 @@ async function resubmitItem (item) {
   }
 }
 
-function openOrderDetail (order, type) {
+async function openOrderDetail (order, type) {
   orderDetail.value = { ...order, type }
+  orderLogs.value = []
+  try {
+    orderDetail.value = await store.getOrderDetail(order.id)
+    orderLogs.value = await store.getOrderLogs(order.id)
+  } catch {
+    orderLogs.value = []
+  }
   showOrderDetail.value = true
 }
 

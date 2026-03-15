@@ -35,6 +35,10 @@
           <q-item-section avatar><q-icon name="people" /></q-item-section>
           <q-item-section>用户管理</q-item-section>
         </q-item>
+        <q-item clickable v-ripple :to="{ name: 'admin-notifications' }">
+          <q-item-section avatar><q-icon name="notifications_active" /></q-item-section>
+          <q-item-section>通知管理</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 

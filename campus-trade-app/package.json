@@ -7,11 +7,11 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "\"..\\tools\\node-v22.22.1-win-x64\\node.exe\" .\\node_modules\\vitest\\vitest.mjs run",
+    "test:watch": "\"..\\tools\\node-v22.22.1-win-x64\\node.exe\" .\\node_modules\\vitest\\vitest.mjs",
     "backend:dev": "node --env-file-if-exists=.env.local backend/server.js",
     "dev": "quasar dev",
-    "build": "quasar build",
+    "build": "\"..\\tools\\node-v22.22.1-win-x64\\node.exe\" .\\node_modules\\@quasar\\app-vite\\bin\\quasar.js build",
     "postinstall": "quasar prepare"
   },
   "dependencies": {
