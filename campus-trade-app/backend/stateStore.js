@@ -39,9 +39,22 @@ function normalizeDate(value) {
   return local.toISOString().slice(0, 10)
 }
 
+function normalizeDateTime(value) {
+  if (!value) return null
+  const normalized = String(value).includes('T')
+    ? String(value)
+    : String(value).includes(' ')
+      ? String(value).replace(' ', 'T')
+      : `${String(value)}T00:00:00`
+  const date = value instanceof Date ? value : new Date(normalized)
+  if (Number.isNaN(date.getTime())) return null
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 19)
+}
+
 function toSqlDateTime(value) {
-  const date = normalizeDate(value)
-  return date ? `${date} 00:00:00` : null
+  const datetime = normalizeDateTime(value)
+  return datetime ? datetime.replace('T', ' ') : null
 }
 
 function escapeIdentifier(value) {
@@ -115,12 +128,14 @@ function buildAuthUser(row) {
     id: code,
     name: row.username,
     studentNo: row.student_no || '',
+    account: Number(row.role_type) === 2 ? 'admin' : (row.student_no || row.username),
     status: toUserStatusLabel(row.user_status),
     campus: row.campus_name || '未设置校区',
     credit: Number(row.credit_score || 5),
     verified: Number(row.verified_status || 0) === 1,
     role: toRoleLabel(row.role_type),
     reg: normalizeDate(row.reg_at) || normalizeDate(new Date()),
+    deletedAt: normalizeDateTime(row.deleted_at),
     passwordHash: row.password_hash
   }
 }
@@ -803,7 +818,7 @@ export class MysqlStateStore {
     return Number(userRows[0]?.total || 0) > 0
   }
 
-  async findAuthUserByStudentNo(studentNo) {
+  async findAuthUserByStudentNo(studentNo, { includeDeleted = false } = {}) {
     const keyword = String(studentNo || '').trim()
     if (!keyword) return null
     const rows = await queryRows(
@@ -811,20 +826,21 @@ export class MysqlStateStore {
       `
       SELECT
         u.user_id, u.user_code, u.student_no, u.username, u.password_hash,
-        u.role_type, u.user_status, u.verified_status, u.credit_score, u.reg_at,
+        u.role_type, u.user_status, u.verified_status, u.credit_score, u.reg_at, u.deleted_at,
         c.campus_name
       FROM ct_user u
       LEFT JOIN ct_campus c ON c.campus_id = u.campus_id
       WHERE u.student_no = ?
+        AND (? = 1 OR u.deleted_at IS NULL)
       LIMIT 1
       `,
-      [keyword]
+      [keyword, includeDeleted ? 1 : 0]
     )
     if (!rows.length) return null
     return buildAuthUser(rows[0])
   }
 
-  async findAuthUserByUsername(username) {
+  async findAuthUserByUsername(username, { includeDeleted = false } = {}) {
     const keyword = String(username || '').trim()
     if (!keyword) return null
     const rows = await queryRows(
@@ -832,14 +848,15 @@ export class MysqlStateStore {
       `
       SELECT
         u.user_id, u.user_code, u.student_no, u.username, u.password_hash,
-        u.role_type, u.user_status, u.verified_status, u.credit_score, u.reg_at,
+        u.role_type, u.user_status, u.verified_status, u.credit_score, u.reg_at, u.deleted_at,
         c.campus_name
       FROM ct_user u
       LEFT JOIN ct_campus c ON c.campus_id = u.campus_id
       WHERE u.username = ?
+        AND (? = 1 OR u.deleted_at IS NULL)
       LIMIT 1
       `,
-      [keyword]
+      [keyword, includeDeleted ? 1 : 0]
     )
     if (!rows.length) return null
     return buildAuthUser(rows[0])
@@ -849,7 +866,7 @@ export class MysqlStateStore {
     const actualStudentNo = String(studentNo || '').trim()
     const actualName = String(username || '').trim()
     const actualPassword = String(password || '').trim()
-    const existing = await this.findAuthUserByStudentNo(actualStudentNo)
+    const existing = await this.findAuthUserByStudentNo(actualStudentNo, { includeDeleted: true })
     if (existing) {
       const error = new Error('学号已注册')
       error.status = 409
@@ -857,7 +874,7 @@ export class MysqlStateStore {
       throw error
     }
 
-    const existingByUsername = await this.findAuthUserByUsername(actualName)
+    const existingByUsername = await this.findAuthUserByUsername(actualName, { includeDeleted: true })
     if (existingByUsername) {
       const error = new Error('用户名已存在')
       error.status = 409
@@ -907,7 +924,7 @@ export class MysqlStateStore {
   }
 
   async syncUsers(connection, users) {
-    const existingRows = await queryRows(connection, 'SELECT user_id, user_code, student_no, password_hash FROM ct_user')
+    const existingRows = await queryRows(connection, 'SELECT user_id, user_code, student_no, password_hash, deleted_at FROM ct_user')
     const existingByCode = new Map()
     const existingByStudentNo = new Map()
     existingRows.forEach((row) => {
@@ -927,7 +944,7 @@ export class MysqlStateStore {
           `
           UPDATE ct_user
           SET user_code = ?, student_no = ?, username = ?, password_hash = ?, campus_id = ?,
-              role_type = ?, user_status = ?, verified_status = ?, credit_score = ?, reg_at = COALESCE(?, reg_at)
+              role_type = ?, user_status = ?, verified_status = ?, credit_score = ?, reg_at = COALESCE(?, reg_at), deleted_at = ?
           WHERE user_id = ?
           `,
           [
@@ -941,6 +958,7 @@ export class MysqlStateStore {
             toVerifiedStatusCode(user.verified),
             Number(user.credit) || 5,
             toSqlDateTime(user.reg),
+            toSqlDateTime(user.deletedAt),
             existing.user_id
           ]
         )
@@ -949,9 +967,9 @@ export class MysqlStateStore {
           `
           INSERT INTO ct_user (
             user_code, student_no, username, password_hash, campus_id,
-            role_type, user_status, verified_status, credit_score, reg_at
+            role_type, user_status, verified_status, credit_score, reg_at, deleted_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
           [
             userCode,
@@ -963,7 +981,8 @@ export class MysqlStateStore {
             toUserStatusCode(user.status),
             toVerifiedStatusCode(user.verified),
             Number(user.credit) || 5,
-            toSqlDateTime(user.reg) || '2024-01-01 00:00:00'
+            toSqlDateTime(user.reg) || '2024-01-01 00:00:00',
+            toSqlDateTime(user.deletedAt)
           ]
         )
       }
@@ -983,6 +1002,12 @@ export class MysqlStateStore {
     const actualStudentNo = String(studentNo || '').trim()
     if (!actualStudentNo) return
     await this.pool.query('UPDATE ct_user SET verified_status = ? WHERE student_no = ?', [toVerifiedStatusCode(verified), actualStudentNo])
+  }
+
+  async updateAuthUserPassword(studentNo, password) {
+    const actualStudentNo = String(studentNo || '').trim()
+    if (!actualStudentNo) return
+    await this.pool.query('UPDATE ct_user SET password_hash = ? WHERE student_no = ?', [hashPassword(password), actualStudentNo])
   }
 
   async clearBusinessTables(connection) {
@@ -1231,7 +1256,7 @@ export class MysqlStateStore {
       `
       SELECT
         u.user_id, u.user_code, u.student_no, u.username, u.password_hash,
-        u.role_type, u.user_status, u.verified_status, u.credit_score, u.reg_at,
+        u.role_type, u.user_status, u.verified_status, u.credit_score, u.reg_at, u.deleted_at,
         c.campus_name
       FROM ct_user u
       LEFT JOIN ct_campus c ON c.campus_id = u.campus_id
@@ -1249,7 +1274,8 @@ export class MysqlStateStore {
       verified: Number(row.verified_status || 0) === 1,
       reg: normalizeDate(row.reg_at) || '2026-01-01',
       role: toRoleLabel(row.role_type),
-      studentNo: row.student_no || ''
+      studentNo: row.student_no || '',
+      deletedAt: normalizeDateTime(row.deleted_at)
     }))
     const userCodeByDbId = new Map(userRows.map((row) => [
       row.user_id,

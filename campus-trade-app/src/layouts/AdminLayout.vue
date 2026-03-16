@@ -29,7 +29,7 @@
         </q-item>
         <q-item clickable v-ripple :to="{ name: 'admin-listings' }">
           <q-item-section avatar><q-icon name="verified" /></q-item-section>
-          <q-item-section>商品审核</q-item-section>
+          <q-item-section>商品列表</q-item-section>
         </q-item>
         <q-item clickable v-ripple :to="{ name: 'admin-users' }">
           <q-item-section avatar><q-icon name="people" /></q-item-section>

@@ -17,7 +17,8 @@ const DEFAULT_ADMIN = {
   verified: true,
   reg: '2024-01-01',
   role: 'admin',
-  studentNo: null
+  studentNo: null,
+  deletedAt: null
 }
 
 function deepClone(value) {
@@ -35,10 +36,11 @@ function uniqueBy(items, keyBuilder) {
 }
 
 function normalizeUser(seedUser) {
+  const studentNo = seedUser.id?.replace(/^U/, '2023') || null
   return {
     id: seedUser.id,
     name: seedUser.name,
-    account: seedUser.name,
+    account: studentNo || seedUser.name,
     password: '123456',
     status: seedUser.status,
     campus: seedUser.campus,
@@ -46,7 +48,8 @@ function normalizeUser(seedUser) {
     verified: !!seedUser.verified,
     reg: seedUser.reg,
     role: 'student',
-    studentNo: seedUser.id?.replace(/^U/, '2023') || null
+    studentNo,
+    deletedAt: null
   }
 }
 
@@ -200,7 +203,7 @@ function createUserFromLegacyName(state, name) {
   const user = {
     id: `U${String(numeric).padStart(2, '0')}`,
     name: trimmed,
-    account: trimmed,
+    account: `2026${String(numeric).padStart(4, '0')}`,
     password: '123456',
     status: '正常',
     campus: '北校区',
@@ -208,7 +211,8 @@ function createUserFromLegacyName(state, name) {
     verified: false,
     reg: '2026-03-10',
     role: 'student',
-    studentNo: `2026${String(numeric).padStart(4, '0')}`
+    studentNo: `2026${String(numeric).padStart(4, '0')}`,
+    deletedAt: null
   }
   state.users.push(user)
   return user
@@ -218,6 +222,10 @@ export function migrateLegacyState(raw) {
   if (!raw || typeof raw !== 'object') return createSeedState()
 
   if (raw.__schemaVersion === 3) {
+    raw.users = Array.isArray(raw.users) ? raw.users.map((user) => ({
+      ...user,
+      deletedAt: user.deletedAt || null
+    })) : []
     raw.notifications = Array.isArray(raw.notifications) ? raw.notifications : []
     raw.meta = raw.meta || {}
     raw.meta.nextNotificationId = Number(raw.meta.nextNotificationId) || (raw.notifications.length + 1)
@@ -241,7 +249,7 @@ export function migrateLegacyState(raw) {
         ...raw.users.map((user) => ({
           id: user.id,
           name: user.name,
-          account: user.name,
+          account: user.studentNo || user.id?.replace(/^U/, '2023') || user.name,
           password: '123456',
           status: user.status || '正常',
           campus: user.campus || '北校区',
@@ -249,7 +257,8 @@ export function migrateLegacyState(raw) {
           verified: !!user.verified,
           reg: user.reg || '2026-03-10',
           role: user.id === DEFAULT_ADMIN.id ? 'admin' : 'student',
-          studentNo: user.id?.replace(/^U/, '2023') || null
+          studentNo: user.id?.replace(/^U/, '2023') || null,
+          deletedAt: user.deletedAt || null
         }))
       ],
       (user) => user.id

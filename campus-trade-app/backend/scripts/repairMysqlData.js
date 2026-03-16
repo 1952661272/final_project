@@ -1,28 +1,10 @@
 import process from 'node:process'
 import crypto from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import mysql from 'mysql2/promise'
+import { loadLocalEnv } from '../env.js'
 
 const USER_PREFIXES = ['dbseller_', 'dbbuyer_', 'finalseller_', 'finalbuyer_']
 const QUESTION_MARK_PATTERN = '%???%'
-
-function loadDotEnvIfPresent() {
-  const envPath = resolve(process.cwd(), '.env.local')
-  if (!existsSync(envPath)) return
-  const lines = readFileSync(envPath, 'utf8').split(/\r?\n/)
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const separatorIndex = trimmed.indexOf('=')
-    if (separatorIndex <= 0) continue
-    const key = trimmed.slice(0, separatorIndex).trim()
-    const rawValue = trimmed.slice(separatorIndex + 1).trim()
-    if (!key || process.env[key]) continue
-    const unquoted = rawValue.replace(/^['"]|['"]$/g, '')
-    process.env[key] = unquoted
-  }
-}
 
 function parseArgs(argv) {
   const argMap = new Map()
@@ -286,7 +268,7 @@ function printSummary(summary) {
 }
 
 async function run() {
-  loadDotEnvIfPresent()
+  loadLocalEnv()
   const { mode, mysqlUrl } = parseArgs(process.argv.slice(2))
   if (!mysqlUrl) {
     throw new Error('MYSQL_URL is required. Use env MYSQL_URL or --mysql-url=<url>.')

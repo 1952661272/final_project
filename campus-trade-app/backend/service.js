@@ -16,10 +16,21 @@ function getToday() {
   return formatDate(new Date())
 }
 
+function getNow() {
+  const now = new Date()
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 19)
+}
+
 function parseDate(value) {
   if (!value) return new Date('1970-01-01T00:00:00')
   if (value instanceof Date) return value
-  const normalized = String(value).includes('T') ? String(value) : `${value}T00:00:00`
+  const raw = String(value)
+  const normalized = raw.includes('T')
+    ? raw
+    : raw.includes(' ')
+      ? raw.replace(' ', 'T')
+      : `${raw}T00:00:00`
   const parsed = new Date(normalized)
   return Number.isNaN(parsed.getTime()) ? new Date('1970-01-01T00:00:00') : parsed
 }
@@ -289,13 +300,20 @@ function isTradedOrderStatus(order) {
   return normalizedPayment === PAYMENT_STATUS.PAID || normalizedStatus === ORDER_STATUS.COMPLETED
 }
 
-function findUserByName(state, name) {
+function isSoftDeleted(user) {
+  return !!user?.deletedAt
+}
+
+function findUserByName(state, name, { includeDeleted = false } = {}) {
   const keyword = String(name || '').trim()
   if (!keyword) return null
   return state.users.find((user) => (
-    user.name === keyword ||
-    user.account === keyword ||
-    user.studentNo === keyword
+    (includeDeleted || !isSoftDeleted(user)) &&
+    (
+      user.name === keyword ||
+      user.account === keyword ||
+      user.studentNo === keyword
+    )
   )) || null
 }
 
@@ -304,8 +322,8 @@ function validateAdmin(state, account) {
   return admin && admin.role === 'admin' && admin.status === '正常' ? admin : null
 }
 
-function getUserById(state, userId) {
-  return state.users.find((user) => user.id === userId) || null
+function getUserById(state, userId, { includeDeleted = false } = {}) {
+  return state.users.find((user) => user.id === userId && (includeDeleted || !isSoftDeleted(user))) || null
 }
 
 function getListingById(state, listingId) {
@@ -352,12 +370,14 @@ function buildUserDto(user) {
     id: user.id,
     name: user.name,
     studentNo: user.studentNo || '',
+    account: user.account || user.studentNo || user.name || '',
     status: user.status || '正常',
     reg: user.reg || getToday(),
     campus: user.campus || '未设置校区',
     credit: Number(user.credit) || 5,
     verified: !!user.verified,
-    role: user.role || 'student'
+    role: user.role || 'student',
+    deletedAt: user.deletedAt || null
   }
 }
 
@@ -375,7 +395,7 @@ function buildNotificationDto(notification) {
 }
 
 function buildListingDto(state, listing) {
-  const seller = getUserById(state, listing.sellerId)
+  const seller = getUserById(state, listing.sellerId, { includeDeleted: true })
   return {
     id: listing.numericId || numericId(listing.id, 'L'),
     title: listing.title,
@@ -400,8 +420,8 @@ function buildListingDto(state, listing) {
 
 function buildOrderDto(state, order) {
   const listing = getListingById(state, order.listingId)
-  const seller = getUserById(state, order.sellerId)
-  const buyer = getUserById(state, order.buyerId)
+  const seller = getUserById(state, order.sellerId, { includeDeleted: true })
+  const buyer = getUserById(state, order.buyerId, { includeDeleted: true })
   return {
     id: order.id,
     listingId: numericId(order.listingId, 'L'),
@@ -424,7 +444,7 @@ function buildOrderDto(state, order) {
 }
 
 function buildOrderLogDto(state, log) {
-  const operator = getUserById(state, log.operatorId)
+  const operator = getUserById(state, log.operatorId, { includeDeleted: true })
   return {
     id: log.id,
     orderId: log.orderId,
@@ -450,7 +470,7 @@ function buildMessageDto(conversation, message, currentUserId) {
 function buildConversationSummary(state, conversation, currentUserId) {
   const listing = getListingById(state, conversation.listingId)
   const peerId = conversation.buyerId === currentUserId ? conversation.sellerId : conversation.buyerId
-  const peer = getUserById(state, peerId)
+  const peer = getUserById(state, peerId, { includeDeleted: true })
   const messages = ensureArray(conversation.messages)
   const lastMessage = messages[messages.length - 1] || null
   const unreadCount = messages.filter((message) => message.senderId !== currentUserId && !message.read).length
@@ -742,7 +762,9 @@ export class DomainService {
 
   async listUsers() {
     const state = await this.repository.read()
-    return state.users.filter((user) => user.role !== 'admin').map(buildUserDto)
+    return state.users
+      .filter((user) => user.role !== 'admin' && !isSoftDeleted(user))
+      .map(buildUserDto)
   }
 
   async listAdminUsers(adminAccount, filters = {}) {
@@ -757,8 +779,13 @@ export class DomainService {
 
     const list = state.users
       .filter((user) => user.role !== 'admin')
+      .filter((user) => {
+        if (status === '已删除') return isSoftDeleted(user)
+        if (isSoftDeleted(user)) return false
+        return true
+      })
       .filter((user) => !studentNo || String(user.studentNo || '').includes(studentNo))
-      .filter((user) => !status || user.status === status)
+      .filter((user) => !status || status === '已删除' || user.status === status)
       .filter((user) => {
         if (!verified) return true
         if (verified === 'verified') return !!user.verified
@@ -787,7 +814,7 @@ export class DomainService {
     const list = ensureArray(state.notifications)
       .map((notification) => ({
         ...buildNotificationDto(notification),
-        userName: getUserById(state, notification.userId)?.name || '-'
+        userName: getUserById(state, notification.userId, { includeDeleted: true })?.name || '-'
       }))
       .sort((left, right) => parseDate(right.createdAt) - parseDate(left.createdAt))
 
@@ -825,8 +852,10 @@ export class DomainService {
       if (!validateAdmin(state, adminAccount)) {
         throw createError(401, '管理员未登录')
       }
-      const user = getUserById(state, userId)
-      if (!user || user.role === 'admin') throw createError(404, 'user not found')
+      const user = getUserById(state, userId, { includeDeleted: true })
+      if (!user) throw createError(404, 'user not found')
+      if (user.role === 'admin') throw createError(400, '不能修改管理员状态')
+      if (isSoftDeleted(user)) throw createError(409, '用户已删除，无法再调整状态')
 
       const nextStatus = normalizeUserStatusStrict(status)
       user.status = nextStatus
@@ -842,6 +871,93 @@ export class DomainService {
     })
     await this.repository.updateAuthUserStatus(updatedUser)
     return buildUserDto(updatedUser)
+  }
+
+  async resetUserPassword(adminAccount, userId) {
+    const resetPassword = '123456'
+    const updatedUser = await this.repository.write((state) => {
+      const admin = validateAdmin(state, adminAccount)
+      if (!admin) throw createError(401, '管理员未登录')
+
+      const user = getUserById(state, userId, { includeDeleted: true })
+      if (!user) throw createError(404, 'user not found')
+      if (user.role === 'admin') throw createError(400, '不能重置管理员密码')
+      if (isSoftDeleted(user)) throw createError(409, '用户已删除，无法重置密码')
+
+      user.password = resetPassword
+      return user
+    })
+
+    await this.repository.updateAuthUserPassword(updatedUser.studentNo, resetPassword)
+    return {
+      userId: updatedUser.id,
+      name: updatedUser.name,
+      account: updatedUser.account || updatedUser.studentNo || '',
+      password: resetPassword,
+      message: '密码已重置为 123456，请提醒用户尽快登录后修改'
+    }
+  }
+
+  async deleteUser(adminAccount, userId) {
+    return this.repository.write((state) => {
+      const admin = validateAdmin(state, adminAccount)
+      if (!admin) throw createError(401, '管理员未登录')
+
+      const user = getUserById(state, userId, { includeDeleted: true })
+      if (!user) throw createError(404, 'user not found')
+      if (user.role === 'admin') throw createError(400, '不能删除管理员用户')
+      if (isSoftDeleted(user)) throw createError(409, '用户已删除，请勿重复操作')
+
+      const deletedAt = getNow()
+      const activeOrders = ensureArray(state.orders).filter((order) => (
+        (order.buyerId === user.id || order.sellerId === user.id) &&
+        isActiveOrderStatus(order.status)
+      ))
+
+      activeOrders.forEach((order) => {
+        const previousStatus = normalizeOrderStatus(order.status)
+        const listing = getListingById(state, order.listingId)
+        const listingTitle = listing?.title || '该商品'
+
+        order.status = ORDER_STATUS.CANCELLED
+        order.cancelReason = '管理员删除用户'
+        order.updatedAt = deletedAt
+
+        if (normalizePaymentStatus(order.paymentStatus, previousStatus) !== PAYMENT_STATUS.PAID) {
+          order.paymentStatus = PAYMENT_STATUS.UNPAID
+        }
+
+        appendOrderLog(state, order, previousStatus, ORDER_STATUS.CANCELLED, admin.id, '管理员删除用户')
+
+        if (listing && listing.sellerId !== user.id) {
+          listing.status = LISTING_STATUS.PUBLISHED
+          listing.updatedAt = deletedAt
+        }
+
+        createNotificationsForUsers(state, [order.buyerId, order.sellerId], {
+          type: 'system',
+          title: '订单已取消',
+          content: `订单 ${order.id} 已因管理员删除用户而自动取消，关联商品“${listingTitle}”已终止当前交易。`,
+          createdAt: deletedAt,
+          relatedListingId: order.listingId,
+          relatedOrderId: order.id
+        })
+      })
+
+      state.listings.forEach((listing) => {
+        if (listing.sellerId !== user.id) return
+        const status = normalizeListingStatus(listing.status)
+        if ([LISTING_STATUS.PUBLISHED, LISTING_STATUS.PENDING].includes(status)) {
+          listing.status = LISTING_STATUS.OFFLINE
+          listing.updatedAt = deletedAt
+        }
+      })
+
+      user.status = '禁用'
+      user.deletedAt = deletedAt
+
+      return buildUserDto(user)
+    })
   }
 
   async getAdminDashboard(adminAccount, filters = {}) {

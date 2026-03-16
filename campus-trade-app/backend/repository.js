@@ -22,12 +22,14 @@ function buildAuthUserFromStateUser(user) {
   return {
     name: user.name,
     studentNo: user.studentNo || '',
+    account: user.account || user.studentNo || user.name || '',
     status: user.status || '正常',
     campus: user.campus || '未设置校区',
     credit: Number(user.credit) || 5,
     verified: !!user.verified,
     role: user.role || 'student',
-    reg: user.reg || getToday()
+    reg: user.reg || getToday(),
+    deletedAt: user.deletedAt || null
   }
 }
 
@@ -73,7 +75,8 @@ function registerStateUser(state, { username, studentNo, password }) {
     verified: false,
     reg: getToday(),
     role: 'student',
-    studentNo: actualStudentNo
+    studentNo: actualStudentNo,
+    deletedAt: null
   }
   state.users.push(created)
   return created
@@ -82,7 +85,10 @@ function registerStateUser(state, { username, studentNo, password }) {
 function authenticateStateUser(state, account, password) {
   const actualAccount = String(account || '').trim()
   const actualPassword = String(password || '').trim()
-  const user = state.users.find((candidate) => candidate.studentNo === actualAccount)
+  const user = state.users.find((candidate) => (
+    candidate.studentNo === actualAccount &&
+    !candidate.deletedAt
+  ))
 
   if (!user || String(user.password || '123456') !== actualPassword) {
     const error = new Error('学号或密码错误')
@@ -113,6 +119,7 @@ function syncStateUserFromAuthUser(state, authUser) {
   user.reg = authUser.reg || user.reg || getToday()
   user.role = authUser.role || user.role || 'student'
   user.studentNo = authUser.studentNo || user.studentNo || ''
+  user.deletedAt = authUser.deletedAt || user.deletedAt || null
 
   return user
 }
@@ -181,6 +188,12 @@ export class DomainRepository {
       await this.store.updateAuthUserVerification(user.studentNo, user.verified)
     }
   }
+
+  async updateAuthUserPassword(studentNo, password) {
+    if (typeof this.store.updateAuthUserPassword === 'function') {
+      await this.store.updateAuthUserPassword(studentNo, password)
+    }
+  }
 }
 
 export class InMemoryDomainRepository {
@@ -217,6 +230,8 @@ export class InMemoryDomainRepository {
   async updateAuthUserStatus() {}
 
   async updateAuthUserVerification() {}
+
+  async updateAuthUserPassword() {}
 }
 
 export function createRepository({ dataFile, mysqlUrl, driver }) {

@@ -430,6 +430,18 @@ async function updateUserStatus(userId, status) {
   await bootstrap(true)
 }
 
+async function resetUserPassword(userId) {
+  const response = await api.post(`/v1/admin/users/${userId}/password/reset`, {}, { headers: userHeaders() })
+  await bootstrap(true)
+  return response.data
+}
+
+async function deleteUser(userId) {
+  const response = await api.delete(`/v1/admin/users/${userId}`, { headers: userHeaders() })
+  await bootstrap(true)
+  return response.data
+}
+
 async function verifyCurrentUser() {
   await api.post('/v1/users/verify', {}, { headers: userHeaders() })
   await bootstrap(true)
@@ -499,6 +511,8 @@ export const store = {
   reviewItem,
   flagListingViolation,
   updateUserStatus,
+  resetUserPassword,
+  deleteUser,
   setAdminUserFilters,
   setAdminDashboardFilters,
   verifyCurrentUser,

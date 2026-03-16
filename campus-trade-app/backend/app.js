@@ -121,6 +121,19 @@ export function createApp(repository) {
     publishEvent('admin.updated')
   }))
 
+  app.post('/api/v1/admin/users/:userId/password/reset', asyncHandler(async (req, res) => {
+    ok(res, await service.resetUserPassword(currentAdminAccount(req), req.params.userId))
+    publishEvent('admin.updated')
+  }))
+
+  app.delete('/api/v1/admin/users/:userId', asyncHandler(async (req, res) => {
+    ok(res, await service.deleteUser(currentAdminAccount(req), req.params.userId))
+    publishEvent('orders.updated')
+    publishEvent('listings.updated')
+    publishEvent('inbox.updated')
+    publishEvent('admin.updated')
+  }))
+
   app.get('/api/v1/admin/dashboard', asyncHandler(async (req, res) => {
     ok(res, await service.getAdminDashboard(currentAdminAccount(req), req.query || {}))
   }))

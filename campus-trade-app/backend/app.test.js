@@ -63,6 +63,153 @@ describe('campus trade api', () => {
     expect(disabled.body.message).toContain('禁用')
   })
 
+  it('allows admin to reset a user password to 123456', async () => {
+    const app = buildApp()
+    const adminHeaders = { 'x-admin-account': encoded('admin') }
+
+    const registered = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ username: 'reset_target', studentNo: '20267701', password: 'secret123' })
+
+    expect(registered.status).toBe(200)
+
+    const reset = await request(app)
+      .post(`/api/v1/admin/users/${registered.body.data.id}/password/reset`)
+      .set(adminHeaders)
+
+    expect(reset.status).toBe(200)
+    expect(reset.body.data.account).toBe('20267701')
+    expect(reset.body.data.password).toBe('123456')
+
+    const oldLogin = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ account: '20267701', password: 'secret123' })
+
+    expect(oldLogin.status).toBe(401)
+
+    const newLogin = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ account: '20267701', password: '123456' })
+
+    expect(newLogin.status).toBe(200)
+    expect(newLogin.body.data.name).toBe('reset_target')
+  })
+
+  it('soft deletes user, cancels active orders, offlines listings, and hides deleted users by default', async () => {
+    const app = buildApp()
+    const adminHeaders = { 'x-admin-account': encoded('admin') }
+
+    const created = await request(app)
+      .post('/api/v1/orders')
+      .set('x-user-name', encoded('202301'))
+      .send({ listingId: 4 })
+
+    expect(created.status).toBe(200)
+
+    const confirmed = await request(app)
+      .patch(`/api/v1/orders/${created.body.data.id}/status`)
+      .set('x-user-name', encoded('202304'))
+      .send({ status: '已确认' })
+
+    expect(confirmed.status).toBe(200)
+
+    const paid = await request(app)
+      .post(`/api/v1/orders/${created.body.data.id}/pay`)
+      .set('x-user-name', encoded('202301'))
+      .send({ paymentMethod: 'wechat_pay' })
+
+    expect(paid.status).toBe(200)
+    expect(paid.body.data.status).toBe('进行中')
+
+    const deleted = await request(app)
+      .delete('/api/v1/admin/users/U04')
+      .set(adminHeaders)
+
+    expect(deleted.status).toBe(200)
+    expect(deleted.body.data.status).toBe('禁用')
+    expect(deleted.body.data.deletedAt).toBeTruthy()
+
+    const login = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ account: '202304', password: '123456' })
+
+    expect(login.status).toBe(401)
+
+    const me = await request(app)
+      .get('/api/v1/users/me')
+      .set('x-user-name', encoded('202304'))
+
+    expect(me.status).toBe(401)
+
+    const order = await request(app)
+      .get(`/api/v1/orders/${created.body.data.id}`)
+      .set('x-user-name', encoded('202301'))
+
+    expect(order.status).toBe(200)
+    expect(order.body.data.status).toBe('已取消')
+    expect(order.body.data.cancelReason).toBe('管理员删除用户')
+
+    const logs = await request(app)
+      .get(`/api/v1/order-logs/${created.body.data.id}`)
+      .set('x-user-name', encoded('202301'))
+
+    expect(logs.status).toBe(200)
+    expect(logs.body.data.list.some((item) => item.toStatus === '已取消' && item.note === '管理员删除用户')).toBe(true)
+
+    const notifications = await request(app)
+      .get('/api/v1/notifications')
+      .set('x-user-name', encoded('202301'))
+
+    expect(notifications.status).toBe(200)
+    expect(notifications.body.data.list.some((item) => item.relatedOrderId === created.body.data.id && item.title === '订单已取消')).toBe(true)
+
+    const listing = await request(app)
+      .get('/api/v1/listings/4')
+
+    expect(listing.status).toBe(200)
+    expect(listing.body.data.status).toBe('下架')
+
+    const defaultUsers = await request(app)
+      .get('/api/v1/admin/users')
+      .set(adminHeaders)
+
+    expect(defaultUsers.status).toBe(200)
+    expect(defaultUsers.body.data.list.some((user) => user.id === 'U04')).toBe(false)
+
+    const deletedUsers = await request(app)
+      .get('/api/v1/admin/users?status=%E5%B7%B2%E5%88%A0%E9%99%A4')
+      .set(adminHeaders)
+
+    expect(deletedUsers.status).toBe(200)
+    const deletedRow = deletedUsers.body.data.list.find((user) => user.id === 'U04')
+    expect(deletedRow).toBeTruthy()
+    expect(deletedRow.deletedAt).toBeTruthy()
+    expect(deletedRow.account).toBe('202304')
+  })
+
+  it('rejects deleting admin users and repeated soft delete requests', async () => {
+    const app = buildApp()
+    const adminHeaders = { 'x-admin-account': encoded('admin') }
+
+    const deleteAdmin = await request(app)
+      .delete('/api/v1/admin/users/A01')
+      .set(adminHeaders)
+
+    expect(deleteAdmin.status).toBe(400)
+
+    const firstDelete = await request(app)
+      .delete('/api/v1/admin/users/U01')
+      .set(adminHeaders)
+
+    expect(firstDelete.status).toBe(200)
+
+    const secondDelete = await request(app)
+      .delete('/api/v1/admin/users/U01')
+      .set(adminHeaders)
+
+    expect(secondDelete.status).toBe(409)
+  })
+
   it('creates pending listing with tags and allows admin review to publish', async () => {
     const app = buildApp()
 
