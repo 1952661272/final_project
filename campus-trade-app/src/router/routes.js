@@ -7,10 +7,12 @@ const routes = [
       { path: 'search', name: 'search', component: () => import('pages/SearchPage.vue') },
       { path: 'category/:category', name: 'search-category', component: () => import('pages/SearchPage.vue') },
       { path: 'detail/:id', name: 'detail', component: () => import('pages/DetailPage.vue') },
+      { path: 'orders/:id', name: 'order-detail', component: () => import('pages/OrderDetailPage.vue'), meta: { requiresAuth: true } },
       { path: 'publish', name: 'publish', component: () => import('pages/PublishPage.vue'), meta: { requiresAuth: true } },
       { path: 'messages', name: 'messages', component: () => import('pages/MessagesPage.vue'), meta: { requiresAuth: true } },
       { path: 'profile', name: 'profile', component: () => import('pages/ProfilePage.vue'), meta: { requiresAuth: true } },
-      { path: 'login', name: 'login', component: () => import('pages/LoginPage.vue') }
+      { path: 'login', name: 'login', component: () => import('pages/LoginPage.vue') },
+      { path: 'register', name: 'register', component: () => import('pages/RegisterPage.vue') }
     ]
   },
   {
@@ -20,6 +22,7 @@ const routes = [
       { path: '', redirect: { name: 'admin-dashboard' } },
       { path: 'dashboard', name: 'admin-dashboard', component: () => import('pages/AdminDashboardPage.vue'), meta: { requiresAdmin: true } },
       { path: 'listings', name: 'admin-listings', component: () => import('pages/AdminListingsPage.vue'), meta: { requiresAdmin: true } },
+      { path: 'notifications', name: 'admin-notifications', component: () => import('pages/AdminNotificationsPage.vue'), meta: { requiresAdmin: true } },
       { path: 'users', name: 'admin-users', component: () => import('pages/AdminUsersPage.vue'), meta: { requiresAdmin: true } },
       { path: 'login', name: 'admin-login', component: () => import('pages/AdminLoginPage.vue') }
     ]

@@ -138,7 +138,7 @@ function setCover (idx) {
   selectedImages.value.unshift(img)
 }
 
-function publish () {
+async function publish () {
   if (!form.title || !form.price) {
     Notify.create({ type: 'warning', message: '请填写标题与价格' })
     return
@@ -147,16 +147,20 @@ function publish () {
     Notify.create({ type: 'warning', message: '请至少上传 1 张图片' })
     return
   }
-  store.publishItem({
-    ...form,
-    images: [...selectedImages.value],
-    tags: ['新发布']
-  })
-  Notify.create({ type: 'positive', message: '发布成功，商品已提交审核' })
-  form.title = ''
-  form.price = ''
-  form.desc = ''
-  selectedImages.value = []
+  try {
+    await store.publishItem({
+      ...form,
+      images: [...selectedImages.value],
+      tags: ['新发布']
+    })
+    Notify.create({ type: 'positive', message: '发布成功，商品已提交审核' })
+    form.title = ''
+    form.price = ''
+    form.desc = ''
+    selectedImages.value = []
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '发布失败' })
+  }
 }
 
 function saveDraft () {

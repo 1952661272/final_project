@@ -14,6 +14,7 @@
           />
         </div>
       </div>
+
       <div class="detail-info">
         <div class="detail-title">{{ item.title }}</div>
         <div class="price">¥ {{ item.price }}</div>
@@ -21,7 +22,7 @@
         <div class="detail-meta">{{ item.shipping }} · {{ item.method }}</div>
 
         <q-banner v-if="!isAvailable" class="status-banner" dense>
-          该商品当前为「{{ item.status }}」，暂不可购买。
+          该商品当前为“{{ item.status }}”，暂时不能继续下单。
         </q-banner>
 
         <div class="detail-block">
@@ -44,13 +45,12 @@
               <span v-if="sellerInfo?.verified" class="verified-badge">已认证</span>
             </div>
             <div class="muted">
-              {{ sellerInfo?.campus || item.campus }} · 信用 {{ sellerInfo?.credit || '4.6' }}
-              · 在售 {{ sellerListings }} 件
+              {{ sellerInfo?.campus || item.campus }} · 信用 {{ sellerInfo?.credit || '4.6' }} · 在售 {{ sellerListings }} 件
             </div>
             <div class="muted">发布 {{ item.time }} · 浏览 {{ item.views }}</div>
             <div class="seller-actions">
               <q-btn flat class="btn-ghost" label="查看主页" to="/profile" />
-              <q-btn flat class="btn-ghost" label="联系卖家" to="/messages" />
+              <q-btn flat class="btn-ghost" label="联系卖家" :disable="!isAvailable" @click="chatNow" />
             </div>
           </q-card>
         </div>
@@ -82,8 +82,8 @@ import { Notify } from 'quasar'
 import { store } from 'src/data/store'
 
 const route = useRoute()
-const itemId = Number(route.params.id)
 const router = useRouter()
+const itemId = Number(route.params.id)
 const item = store.state.items.find((it) => it.id === itemId)
 
 const activeIndex = ref(0)
@@ -92,26 +92,36 @@ const isAvailable = computed(() => item && item.status === '上架')
 const sellerInfo = computed(() => store.state.users.find((user) => user.name === item?.seller))
 const sellerListings = computed(() => store.state.items.filter((it) => it.seller === item?.seller && it.status === '上架').length)
 
-function buyNow () {
+async function buyNow () {
   if (!item || !isAvailable.value) return
   if (!store.state.user.loggedIn) {
-    Notify.create({ type: 'warning', message: '请先登录再下单' })
+    Notify.create({ type: 'warning', message: '请先登录后联系卖家' })
     router.push({ name: 'login', query: { redirect: route.fullPath } })
     return
   }
-  store.createOrder(item)
-  Notify.create({ type: 'positive', message: '订单已创建' })
-  router.push({ name: 'profile' })
+
+  try {
+    const conversation = await store.startChat(item)
+    Notify.create({ type: 'positive', message: '已进入与卖家的聊天窗口，可先沟通后再购买' })
+    router.push({ name: 'messages', query: { conversationId: conversation?.id } })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '创建会话失败' })
+  }
 }
 
-function chatNow () {
+async function chatNow () {
   if (!item || !isAvailable.value) return
   if (!store.state.user.loggedIn) {
-    Notify.create({ type: 'warning', message: '请先登录再私聊' })
+    Notify.create({ type: 'warning', message: '请先登录再联系卖家' })
     router.push({ name: 'login', query: { redirect: route.fullPath } })
     return
   }
-  store.startChat(item.seller)
-  router.push({ name: 'messages' })
+
+  try {
+    const conversation = await store.startChat(item)
+    router.push({ name: 'messages', query: { conversationId: conversation?.id } })
+  } catch (error) {
+    Notify.create({ type: 'negative', message: error.message || '创建会话失败' })
+  }
 }
 </script>

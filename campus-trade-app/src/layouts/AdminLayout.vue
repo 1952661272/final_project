@@ -29,11 +29,15 @@
         </q-item>
         <q-item clickable v-ripple :to="{ name: 'admin-listings' }">
           <q-item-section avatar><q-icon name="verified" /></q-item-section>
-          <q-item-section>商品审核</q-item-section>
+          <q-item-section>商品列表</q-item-section>
         </q-item>
         <q-item clickable v-ripple :to="{ name: 'admin-users' }">
           <q-item-section avatar><q-icon name="people" /></q-item-section>
           <q-item-section>用户管理</q-item-section>
+        </q-item>
+        <q-item clickable v-ripple :to="{ name: 'admin-notifications' }">
+          <q-item-section avatar><q-icon name="notifications_active" /></q-item-section>
+          <q-item-section>通知管理</q-item-section>
         </q-item>
       </q-list>
     </q-drawer>
@@ -47,14 +51,46 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { store } from 'src/data/store'
 
 const router = useRouter()
 const drawer = ref(true)
+let refreshTimer = null
+
+function refreshData () {
+  void store.refresh()
+}
+
+function handleVisibilityChange () {
+  if (document.visibilityState === 'visible') {
+    refreshData()
+  }
+}
+
+function handleStorage () {
+  refreshData()
+}
+
+onMounted(() => {
+  refreshData()
+  refreshTimer = window.setInterval(refreshData, 5000)
+  window.addEventListener('focus', refreshData)
+  window.addEventListener('storage', handleStorage)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  if (refreshTimer) window.clearInterval(refreshTimer)
+  window.removeEventListener('focus', refreshData)
+  window.removeEventListener('storage', handleStorage)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
 
 function logout () {
   localStorage.removeItem('admin_auth')
+  localStorage.removeItem('admin_account')
   router.push({ name: 'admin-login' })
 }
 </script>

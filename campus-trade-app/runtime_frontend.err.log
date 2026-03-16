@@ -1,0 +1,18 @@
+[2m10:07:56[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/events/stream?userName=%E5%BC%A0%E5%90%8C%E5%AD%A6[39m
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+[2m10:07:56[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/events/stream?userName=%E5%85%A8%E6%99%BA%E6%81%92&adminAccount=admin[39m
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+[2m10:07:56[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/events/stream?userName=%E5%BC%A0%E5%90%8C%E5%AD%A6[39m
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+[2m10:07:56[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/events/stream?userName=%E5%BC%A0%E5%90%8C%E5%AD%A6[39m
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+[2m10:07:56[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/events/stream?userName=%E5%BC%A0%E5%90%8C%E5%AD%A6[39m
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+[2m10:07:56[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/v1/events/stream?userName=%E5%85%A8%E6%99%BA%E6%81%92&adminAccount=admin[39m
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)

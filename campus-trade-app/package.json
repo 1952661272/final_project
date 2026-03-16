@@ -7,10 +7,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "echo \"No test specified\" && exit 0",
-    "backend:dev": "node --env-file-if-exists=.env.local backend/server.js",
+    "test": "\"..\\tools\\node-v22.22.1-win-x64\\node.exe\" .\\node_modules\\vitest\\vitest.mjs run",
+    "test:watch": "\"..\\tools\\node-v22.22.1-win-x64\\node.exe\" .\\node_modules\\vitest\\vitest.mjs",
+    "backend:dev": "node backend/server.js",
+    "db:repair:dry-run": "node backend/scripts/repairMysqlData.js --mode=dry-run",
+    "db:repair:apply": "node backend/scripts/repairMysqlData.js --mode=apply",
     "dev": "quasar dev",
-    "build": "quasar build",
+    "build": "\"..\\tools\\node-v22.22.1-win-x64\\node.exe\" .\\node_modules\\@quasar\\app-vite\\bin\\quasar.js build",
     "postinstall": "quasar prepare"
   },
   "dependencies": {
@@ -24,7 +27,9 @@
   "devDependencies": {
     "@quasar/app-vite": "^2.1.0",
     "autoprefixer": "^10.4.2",
-    "postcss": "^8.4.14"
+    "postcss": "^8.4.14",
+    "supertest": "^7.2.2",
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": "^28 || ^26 || ^24 || ^22 || ^20",

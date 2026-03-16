@@ -46,9 +46,39 @@
         <q-space />
 
         <div class="header-actions">
-          <q-btn flat icon="notifications_none" label="提醒" class="header-action-btn header-alert">
-            <q-badge v-if="alertCount > 0" floating rounded color="negative" />
-          </q-btn>
+          <div
+            class="header-alert-wrapper"
+            @mouseenter="openReminderPreview"
+            @mouseleave="closeReminderPreview"
+          >
+            <q-btn flat icon="notifications_none" label="提醒" class="header-action-btn header-alert" @click="goToMessages">
+              <q-badge v-if="alertCount > 0" floating rounded color="negative" />
+            </q-btn>
+            <q-menu
+              v-model="showReminderPreview"
+              anchor="bottom right"
+              self="top right"
+              no-parent-event
+              no-focus
+              no-refocus
+              persistent
+            >
+              <q-list style="min-width: 300px">
+                <q-item v-for="reminder in reminders" :key="reminder.key">
+                  <q-item-section avatar>
+                    <q-icon :name="reminder.icon" color="primary" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ reminder.title }}</q-item-label>
+                    <q-item-label caption>{{ reminder.desc }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-item-label caption>{{ reminder.time }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </div>
           <q-btn
             v-if="!store.state.user.loggedIn"
             flat
@@ -163,14 +193,17 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { categories } from 'src/data/mock'
 import { store } from 'src/data/store'
 
 const leftDrawerOpen = ref(false)
 const searchKeyword = ref('')
+const showReminderPreview = ref(false)
 const router = useRouter()
+let refreshTimer = null
+let supportsHover = false
 const categoryMeta = {
   数码: { icon: 'devices_other', desc: '手机、平板、电脑与配件', tone: '#0ea5e9' },
   教材: { icon: 'menu_book', desc: '课程教材与考研资料', tone: '#16a34a' },
@@ -231,10 +264,90 @@ const drawerScenes = computed(() => {
   }))
 })
 
+const buyPendingCount = computed(() => {
+  return store.state.orders.filter((order) => order.status === '待确认').length
+})
+
+const sellPendingCount = computed(() => {
+  return store.state.sellerOrders.filter((order) => order.status === '待确认').length
+})
+
+const unreadMessageCount = computed(() => {
+  return store.state.chats.reduce((count, chat) => count + (chat.unreadCount || 0), 0)
+})
+
+const unreadNotificationCount = computed(() => {
+  return store.state.notifications.filter((notification) => !notification.read).length
+})
+
 const alertCount = computed(() => {
-  const buyPending = store.state.orders.filter((order) => order.status === '待确认').length
-  const sellPending = store.state.sellerOrders.filter((order) => order.status === '待确认').length
-  return buyPending + sellPending
+  return buyPendingCount.value + sellPendingCount.value + unreadMessageCount.value + unreadNotificationCount.value
+})
+
+const reminders = computed(() => {
+  if (!store.state.user.loggedIn) {
+    return [
+      {
+        key: 'login',
+        icon: 'login',
+        title: '登录后查看提醒',
+        desc: '订单确认、付款和系统消息都会显示在这里',
+        time: '现在'
+      }
+    ]
+  }
+
+  const items = []
+  const unreadNotifications = store.state.notifications
+    .filter((notification) => !notification.read)
+    .slice(0, 3)
+
+  if (buyPendingCount.value > 0) {
+    items.push({
+      key: 'buy',
+      icon: 'shopping_bag',
+      title: `${buyPendingCount.value} 笔订单待卖家确认`,
+      desc: '前往我的交易查看买到的商品',
+      time: '订单提醒'
+    })
+  }
+  if (sellPendingCount.value > 0) {
+    items.push({
+      key: 'sell',
+      icon: 'inventory_2',
+      title: `${sellPendingCount.value} 位买家等待你确认`,
+      desc: '前往我的交易处理卖出订单',
+      time: '订单提醒'
+    })
+  }
+  if (unreadMessageCount.value > 0) {
+    items.push({
+      key: 'messages',
+      icon: 'chat',
+      title: `${unreadMessageCount.value} 条未读聊天消息`,
+      desc: '点击提醒可进入消息中心继续沟通',
+      time: '聊天提醒'
+    })
+  }
+  unreadNotifications.forEach((notification) => {
+    items.push({
+      key: notification.id,
+      icon: 'campaign',
+      title: notification.title,
+      desc: notification.content,
+      time: notification.createdAt || '刚刚'
+    })
+  })
+  if (items.length === 0) {
+    items.push({
+      key: 'empty',
+      icon: 'notifications',
+      title: '暂无新提醒',
+      desc: '现在没有需要处理的订单、聊天或系统消息',
+      time: '已同步'
+    })
+  }
+  return items.slice(0, 5)
 })
 
 function compactQuery (query = {}) {
@@ -260,7 +373,40 @@ function doSearch () {
   router.push({ name: 'search', query: { keyword: searchKeyword.value.trim() } })
 }
 
+function openReminderPreview () {
+  if (!supportsHover) return
+  showReminderPreview.value = true
+}
+
+function closeReminderPreview () {
+  showReminderPreview.value = false
+}
+
+function goToMessages () {
+  showReminderPreview.value = false
+  if (!store.state.user.loggedIn) {
+    router.push({ name: 'login', query: { redirect: '/messages' } })
+    return
+  }
+  router.push({ name: 'messages' })
+}
+
+function refreshData () {
+  void store.refresh()
+}
+
+function handleVisibilityChange () {
+  if (document.visibilityState === 'visible') {
+    refreshData()
+  }
+}
+
+function handleStorage () {
+  refreshData()
+}
+
 onMounted(() => {
+  supportsHover = window.matchMedia('(hover: hover)').matches
   void store.bootstrap().then(() => {
     if (store.state.user.loggedIn || localStorage.getItem('user_auth') !== '1') return
     const name = localStorage.getItem('user_name') || '张同学'
@@ -272,5 +418,17 @@ onMounted(() => {
     }
     store.login(name)
   })
+
+  refreshTimer = window.setInterval(refreshData, 5000)
+  window.addEventListener('focus', refreshData)
+  window.addEventListener('storage', handleStorage)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  if (refreshTimer) window.clearInterval(refreshTimer)
+  window.removeEventListener('focus', refreshData)
+  window.removeEventListener('storage', handleStorage)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
